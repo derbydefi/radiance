@@ -780,7 +780,7 @@
 				</div>
 				<div id="buttons">
 					<button id="resetButton">Reset</button>
-					<button id="muteButton">Mute</button>
+					
 					<button id="settingsButton">Settings</button>
 					<button id="mainMenuButton">Main Menu</button>
 				</div>
@@ -1205,7 +1205,7 @@
 				new Audio("audio/music/3-1.ogg"),
 			];
 
-			let muted = false;
+			
 			function playBackgroundMusic() {
 				// Stop current music if playing
 				if (currentMusic) {
@@ -1529,7 +1529,7 @@
 				"totalDroppedPickupCount"
 			);
 
-			const muteButton = document.getElementById("muteButton");
+			
 			const settingsButton = document.getElementById("settingsButton");
 			const resetButton = document.getElementById("resetButton");
 
@@ -2382,24 +2382,7 @@
 			// Call resizeCanvas() initially to set up the canvas size
 			resizeCanvas();
 
-			// Event listener for mute button (placeholder)
-			muteButton.addEventListener("click", () => {
-				let prevSfxVol = sfxVolume;
-				let prevMusicVol = musicVolume;
-				if (!muted) {
-					menuSelect.volume = sfxVolume / 100;
-					menuSelect.play();
-					sfxVolume = 0;
-					musicVolume = 0;
-					muted = true;
-				} else {
-					sfxVolume = prevSfxVol;
-					musicVolume = prevMusicVol;
-					menuSelect.volume = sfxVolume / 100;
-					menuSelect.play();
-					muted = false;
-				}
-			});
+
 
 			closeSettingsButton.addEventListener("click", () => {
 				menuSelect.volume = sfxVolume / 100;
@@ -2728,7 +2711,7 @@
                     <li><strong>Movement:</strong> Use <kbd>W</kbd>, <kbd>A</kbd>, <kbd>S</kbd>, <kbd>D</kbd> or Arrow Keys to move.</li>
                     <li><strong>Flashlight:</strong> Move the mouse to aim your flashlight.</li>
                     <li><strong>Shoot:</strong> Left-click to shoot.</li>
-                    <li><strong>Mute:</strong> Press <kbd>M</kbd> to mute/unmute audio.</li>
+                    
                 </ul>
             </div>
             <div class="help-section">
