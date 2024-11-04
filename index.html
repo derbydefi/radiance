@@ -1,0 +1,4763 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Radiance</title>
+		<style>
+			/* Canvas Styles */
+			canvas {
+				border: 1px solid rgb(59, 59, 59);
+				cursor: crosshair;
+				background-color: #000; /* Black background for the canvas */
+				width: 100%; /* Canvas fills the game container */
+				height: 100%; /* Canvas fills the game container */
+				display: block;
+			}
+
+			/* Controls */
+			#controls {
+				display: flex;
+				align-items: center;
+				gap: 10px;
+				justify-content: center;
+				margin-bottom: 10px;
+			}
+
+			label {
+				margin-left: 5px;
+				color: #e0e0e0;
+				font-family: Arial, sans-serif;
+			}
+
+			/* Level UI */
+			#levelUI {
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				gap: 20px;
+				margin-bottom: 10px;
+			}
+
+			#level {
+				font-weight: bold;
+			}
+
+			/* Reset Button */
+			#resetButton {
+				padding: 5px 10px;
+				font-size: 14px;
+				cursor: pointer;
+			}
+
+			/* Game Container */
+			#gameContainer {
+				position: relative;
+				display: flex;
+				flex-direction: column;
+				width: 800px; /* Default to original size */
+				height: 600px; /* Default to original size */
+				margin: 0 auto; /* Center horizontally */
+			}
+			/* UI Section */
+			#ui {
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+				background-color: #111;
+				color: #00ffff;
+				font-size: 14px;
+				width: 100%;
+				box-sizing: border-box;
+				padding: 10px;
+				box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);
+				font-family: Arial, sans-serif;
+				flex-shrink: 0; /* Prevent UI from shrinking */
+			}
+
+			#statusBar {
+				display: flex;
+				align-items: center;
+				gap: 20px;
+			}
+
+			#pickupCounts span {
+				margin-right: 15px;
+			}
+
+			/* Buttons in UI */
+			#buttons {
+				display: flex;
+				gap: 10px;
+			}
+
+			#buttons button {
+				padding: 5px 10px;
+				font-size: 14px;
+				cursor: pointer;
+				background: #111;
+				color: #00ffff;
+				border: 1px solid #00ffff;
+				border-radius: 4px;
+				transition: background 0.3s, box-shadow 0.3s;
+			}
+
+			#buttons button:hover {
+				background: #00ffff;
+				color: #111;
+				box-shadow: 0 0 10px rgba(0, 255, 255, 0.7);
+			}
+
+			/* Modal Background */
+			.modal {
+				position: fixed;
+				top: 0;
+				left: 0;
+				width: 100%;
+				height: 100%;
+				background: radial-gradient(
+					circle at center,
+					rgba(0, 0, 0, 0.95),
+					rgba(0, 0, 0, 1)
+				);
+				backdrop-filter: blur(5px);
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				z-index: 1000;
+			}
+			/* Settings Modal */
+			#settingsModal {
+				z-index: 1001; /* Higher than introModal */
+			}
+			/* Settings Modal */
+			#settingsModal .modal-content {
+				width: 600px;
+				max-height: 80vh;
+				overflow-y: auto;
+				text-align: left;
+				padding: 20px;
+				z-index: 1001;
+			}
+			/* Settings Sections */
+			.settings-section {
+				margin-bottom: 30px;
+			}
+
+			.settings-section h3 {
+				border-bottom: 1px solid #00ffff;
+				padding-bottom: 5px;
+				margin-bottom: 20px;
+				color: #00ffff;
+				text-shadow: 0 0 5px rgba(0, 255, 255, 0.5);
+				font-size: 20px;
+			}
+
+			.settings-section label {
+				display: block;
+				margin-bottom: 10px;
+				color: #e0e0e0;
+				font-size: 16px;
+			}
+
+			.settings-section input[type="range"],
+			.settings-section input[type="number"],
+			.settings-section select {
+				width: 100%;
+				margin-bottom: 15px;
+				background: #222;
+				border: 1px solid #555;
+				border-radius: 5px;
+				height: 25px;
+			}
+
+			.settings-section input[type="checkbox"],
+			.settings-section label input[type="radio"] {
+				margin-right: 10px;
+			}
+
+			#settingsModal button {
+				margin-top: 20px;
+				width: 100%;
+				padding: 15px;
+				font-size: 18px;
+			}
+
+			/* Adjust details summary */
+			.settings-section details summary {
+				cursor: pointer;
+				font-size: 18px;
+				color: #00ffff;
+				outline: none;
+				margin-bottom: 10px;
+			}
+
+			/* Setting Items */
+			.setting-item {
+				display: flex;
+				align-items: center;
+				margin-bottom: 15px;
+			}
+
+			.setting-item label {
+				flex: 1;
+				color: #e0e0e0;
+				font-size: 16px;
+				margin-right: 10px;
+			}
+
+			.setting-item input[type="range"],
+			.setting-item input[type="number"],
+			.setting-item select {
+				flex: 2;
+				background: #222;
+				border: 1px solid #555;
+				border-radius: 5px;
+				height: 25px;
+				color: #e0e0e0;
+				padding: 0 5px;
+			}
+
+			.setting-item input[type="checkbox"],
+			.setting-item label input[type="radio"] {
+				margin-right: 10px;
+			}
+
+			/* Cascades Section Styling */
+			#cascadesList .cascade-item {
+				display: flex;
+				align-items: center;
+				margin-bottom: 5px;
+				font-size: 14px;
+			}
+
+			#cascadesList .cascade-item span {
+				margin-right: 5px;
+			}
+
+			#cascadesList .cascade-item input[type="number"] {
+				width: 60px;
+				margin-right: 10px;
+				background: #222;
+				border: 1px solid #555;
+				border-radius: 4px;
+				color: #e0e0e0;
+				padding: 2px 5px;
+			}
+
+			#cascadesList .cascade-item button {
+				padding: 5px 10px;
+				font-size: 12px;
+				margin-left: auto;
+				background: #111;
+				color: #00ffff;
+				border: 1px solid #00ffff;
+				border-radius: 4px;
+				cursor: pointer;
+			}
+
+			#cascadesList .cascade-item button:hover {
+				background: #00ffff;
+				color: #111;
+			}
+
+			.settings-section details summary::-webkit-details-marker {
+				display: none;
+			}
+
+			/* Modal Content */
+			.modal-content {
+				background: linear-gradient(145deg, #1a1a1a, #0f0f0f);
+				padding: 40px;
+				border-radius: 12px;
+				box-shadow: 0 0 20px rgba(0, 255, 255, 0.2),
+					inset 0 0 10px rgba(0, 255, 255, 0.1);
+				text-align: center;
+				color: #e0e0e0;
+				width: 400px;
+				font-family: Arial, sans-serif;
+				position: relative;
+				overflow: hidden;
+			}
+
+			/* Modal Header */
+			.modal-content h2 {
+				margin-top: 0;
+				font-size: 32px;
+				color: #00ffff;
+				text-shadow: 0 0 10px rgba(0, 255, 255, 0.7);
+			}
+
+			/* Modal Paragraph */
+			.modal-content p {
+				font-size: 16px;
+				line-height: 1.5;
+				color: #cccccc;
+			}
+
+			/* Modal Buttons Container */
+			.modal-buttons,
+			#menuOptions {
+				display: flex;
+				flex-direction: column;
+				gap: 15px;
+				margin-top: 30px;
+			}
+
+			/* Modal Buttons */
+			.modal-buttons button,
+			.menu-option,
+			#nextLevelButton,
+			#closeHelpButton,
+			#gameOverResetButton,
+			#closeSettingsButton {
+				padding: 15px;
+				font-size: 18px;
+				background: #111;
+				color: #00ffff;
+				border: 1px solid #00ffff;
+				border-radius: 8px;
+				cursor: pointer;
+				transition: background 0.3s, box-shadow 0.3s;
+				text-transform: uppercase;
+				letter-spacing: 2px;
+				position: relative;
+				overflow: hidden;
+				font-family: Arial, sans-serif;
+			}
+
+			/* Button Hover Effects */
+			.modal-buttons button:hover,
+			.menu-option:hover,
+			#nextLevelButton:hover,
+			#closeHelpButton:hover,
+			#gameOverResetButton:hover,
+			#closeSettingsButton:hover {
+				background: #00ffff;
+				color: #111;
+				box-shadow: 0 0 15px rgba(0, 255, 255, 0.7);
+			}
+
+			/* Selected Menu Option */
+			.menu-option.selected {
+				background: #00ffff;
+				color: #111;
+				box-shadow: 0 0 15px rgba(0, 255, 255, 0.7);
+			}
+
+			/* Add a glowing border to modal content */
+			.modal-content::before {
+				content: "";
+				position: absolute;
+				top: -2px;
+				left: -2px;
+				right: -2px;
+				bottom: -2px;
+				border-radius: 14px;
+				border: 2px solid rgba(0, 255, 255, 0.2);
+				box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+				pointer-events: none;
+			}
+
+			/* Background grid pattern inside modals */
+			.modal-content::after {
+				content: "";
+				position: absolute;
+				top: 0;
+				left: 0;
+				right: 0;
+				bottom: 0;
+				background-image: linear-gradient(#0d0d0d 1px, transparent 1px),
+					linear-gradient(90deg, #0d0d0d 1px, transparent 1px);
+				background-size: 20px 20px;
+				opacity: 0.05;
+				pointer-events: none;
+			}
+
+			/* Scrollbar styling for modals */
+			.modal-content::-webkit-scrollbar {
+				width: 8px;
+			}
+
+			.modal-content::-webkit-scrollbar-thumb {
+				background: #00ffff;
+				border-radius: 4px;
+			}
+
+			.modal-content::-webkit-scrollbar-track {
+				background: #1a1a1a;
+			}
+
+			/* Close Button for Modals */
+			.modal-content .close-button {
+				position: absolute;
+				top: 15px;
+				right: 15px;
+				background: none;
+				border: none;
+				color: #00ffff;
+				font-size: 24px;
+				cursor: pointer;
+				transition: color 0.3s;
+			}
+
+			.modal-content .close-button:hover {
+				color: #ffffff;
+			}
+
+			/* Animate modal appearance */
+			@keyframes modalFadeIn {
+				from {
+					transform: scale(0.95);
+					opacity: 0;
+				}
+				to {
+					transform: scale(1);
+					opacity: 1;
+				}
+			}
+
+			.modal-content {
+				animation: modalFadeIn 0.2s ease-in-out;
+			}
+
+			/* Adjust the modal to be smaller and remove background overlay */
+			.modal.small-modal {
+				position: absolute;
+				width: 400px; /* Adjust as needed */
+				height: auto;
+				top: 20px; /* Position at the top-left corner or as desired */
+				left: 20px;
+				background-color: rgba(0, 0, 0, 0.8); /* Semi-transparent background */
+				border: 1px solid #fff;
+				z-index: 1000; /* Ensure it appears above other elements */
+				overflow-y: auto; /* Add scroll if content overflows */
+			}
+
+			/* Remove the overlay effect */
+			.modal.small-modal::before {
+				content: none;
+			}
+
+			/* Style the modal content */
+			.modal-content {
+				padding: 20px;
+				color: #fff;
+			}
+
+			/* Optional: Make the modal draggable */
+			.modal.small-modal.draggable {
+				cursor: move;
+			}
+
+			/* Intro Modal Styles */
+
+			/* Intro Modal */
+			#introModal {
+				z-index: 1000;
+			}
+			#introModal .modal-content {
+				width: 400px;
+				z-index: 1000;
+			}
+
+			#introModal h2 {
+				margin-top: 0;
+				font-size: 32px;
+				color: #00ffff;
+				text-shadow: 0 0 10px rgba(0, 255, 255, 0.7);
+			}
+
+			/* Initial Intro Modal Styles */
+			#initialIntroModal .modal-content {
+				width: 600px;
+				padding: 60px 40px;
+				text-align: center;
+			}
+
+			#initialIntroModal .game-title {
+				font-size: 72px;
+				margin: 0;
+				color: #00ffff;
+				text-shadow: 0 0 20px rgba(0, 255, 255, 0.7);
+				font-family: "Arial Black", sans-serif;
+			}
+
+			#initialIntroModal .intro-text {
+				margin-top: 40px;
+				font-size: 24px;
+				color: #e0e0e0;
+				font-family: Arial, sans-serif;
+				animation: blink 1.5s infinite;
+			}
+
+			/* Blink Animation for the Prompt */
+			@keyframes blink {
+				0% {
+					opacity: 1;
+				}
+				50% {
+					opacity: 0.3;
+				}
+				100% {
+					opacity: 1;
+				}
+			}
+
+			/* Menu Options in Intro Modal */
+			#menuOptions {
+				display: flex;
+				flex-direction: column;
+				gap: 15px;
+				margin-top: 30px;
+			}
+
+			.menu-option {
+				padding: 15px;
+				font-size: 18px;
+				background: #111;
+				color: #00ffff;
+				border: 1px solid #00ffff;
+				border-radius: 8px;
+				cursor: pointer;
+				transition: background 0.3s, box-shadow 0.3s;
+				text-transform: uppercase;
+				letter-spacing: 2px;
+				position: relative;
+				overflow: hidden;
+				font-family: Arial, sans-serif;
+			}
+
+			/* General Body Styles */
+			html,
+			body {
+				height: 100%;
+				margin: 0;
+				padding: 0;
+				background: black;
+				color: #e0e0e0;
+				font-family: Arial, sans-serif;
+				text-align: center;
+			}
+
+			/* Adjusting Controls Labels */
+			#controls label {
+				color: #00ffff;
+				font-family: Arial, sans-serif;
+			}
+
+			/* Adjusting Input Sliders */
+			#controls input[type="range"] {
+				width: 150px;
+				background: transparent;
+			}
+
+			#controls input[type="range"]::-webkit-slider-thumb {
+				-webkit-appearance: none;
+				width: 14px;
+				height: 14px;
+				background: #00ffff;
+				border-radius: 50%;
+				cursor: pointer;
+			}
+
+			#controls input[type="range"]::-webkit-slider-runnable-track {
+				width: 100%;
+				height: 4px;
+				background: #333;
+			}
+
+			/* Adjusting Buttons in Controls */
+			#controls button {
+				padding: 10px 20px;
+				font-size: 14px;
+				background: #111;
+				color: #00ffff;
+				border: 1px solid #00ffff;
+				border-radius: 4px;
+				cursor: pointer;
+				transition: background 0.3s, box-shadow 0.3s;
+				font-family: Arial, sans-serif;
+			}
+
+			#controls button:hover {
+				background: #00ffff;
+				color: #111;
+				box-shadow: 0 0 10px rgba(0, 255, 255, 0.7);
+			}
+
+			/* Game Over Modal */
+			#gameOverModal .modal-content {
+				width: 400px;
+			}
+
+			#gameOverModal h2 {
+				margin-top: 0;
+				font-size: 32px;
+				color: #ff0000;
+				text-shadow: 0 0 10px rgba(255, 0, 0, 0.7);
+			}
+
+			/* Level Completion Modal */
+			#levelCompleteModal .modal-content {
+				width: 400px;
+			}
+
+			#levelCompleteModal h2 {
+				margin-top: 0;
+				font-size: 32px;
+				color: #00ff00;
+				text-shadow: 0 0 10px rgba(0, 255, 0, 0.7);
+			}
+			/* Help Modal Styles */
+			#helpModal .modal-content {
+				width: 600px;
+				max-height: 80vh; /* Limit the height and allow scrolling if content overflows */
+				overflow-y: auto;
+				padding: 40px;
+				text-align: left; /* Left-align text for better readability */
+			}
+
+			#helpModal h2 {
+				margin-top: 0;
+				font-size: 32px;
+				color: #00ffff;
+				text-shadow: 0 0 10px rgba(0, 255, 255, 0.7);
+			}
+
+			.help-section {
+				margin-bottom: 30px;
+			}
+
+			.help-section h3 {
+				margin-top: 20px;
+				color: #00ffff;
+				font-size: 24px;
+				text-shadow: 0 0 5px rgba(0, 255, 255, 0.5);
+			}
+
+			.help-section p {
+				font-size: 16px;
+				line-height: 1.6;
+				color: #cccccc;
+			}
+
+			.help-section ul {
+				list-style-type: disc;
+				margin-left: 20px;
+			}
+
+			.help-section li {
+				margin-bottom: 10px;
+				font-size: 16px;
+				color: #e0e0e0;
+			}
+
+			.help-section kbd {
+				background-color: #333;
+				color: #e0e0e0;
+				padding: 2px 5px;
+				border-radius: 3px;
+				font-family: "Courier New", Courier, monospace;
+			}
+
+			#helpModal .modal-content button {
+				display: block;
+				margin: 0 auto;
+				padding: 12px 24px;
+				font-size: 18px;
+				background: #111;
+				color: #00ffff;
+				border: 1px solid #00ffff;
+				border-radius: 8px;
+				cursor: pointer;
+				transition: background 0.3s, box-shadow 0.3s;
+			}
+
+			#helpModal .modal-content button:hover {
+				background: #00ffff;
+				color: #111;
+				box-shadow: 0 0 15px rgba(0, 255, 255, 0.7);
+			}
+
+			/* Scrollbar styling for the modal content */
+			#helpModal .modal-content::-webkit-scrollbar {
+				width: 8px;
+			}
+
+			#helpModal .modal-content::-webkit-scrollbar-thumb {
+				background: #00ffff;
+				border-radius: 4px;
+			}
+
+			#helpModal .modal-content::-webkit-scrollbar-track {
+				background: #1a1a1a;
+			}
+
+			#scoreDisplay {
+				margin-right: 20px;
+				cursor: pointer;
+				position: relative;
+			}
+
+			#scoreDisplay:hover #highScorePopup {
+				display: block;
+			}
+
+			#highScorePopup {
+				display: none;
+				position: absolute;
+				top: 100%; /* Below the scoreDisplay */
+				left: 0;
+				background-color: rgba(17, 17, 17, 0.9);
+				color: #00ffff;
+				padding: 10px;
+				border: 1px solid #00ffff;
+				border-radius: 4px;
+				white-space: nowrap;
+				z-index: 1001;
+			}
+			/* Adjusted Button Styles */
+			button {
+				padding: 10px 20px;
+				font-size: 14px;
+				background: #111;
+				color: #00ffff;
+				border: 1px solid #00ffff;
+				border-radius: 4px;
+				cursor: pointer;
+				transition: background 0.3s, box-shadow 0.3s;
+			}
+
+			button:hover {
+				background: #00ffff;
+				color: #111;
+				box-shadow: 0 0 10px rgba(0, 255, 255, 0.7);
+			}
+
+			/* Input and Select Styles */
+			input[type="range"],
+			input[type="number"],
+			select {
+				width: 100%;
+				background: #222;
+				border: 1px solid #555;
+				border-radius: 4px;
+				color: #e0e0e0;
+				padding: 2px 5px;
+			}
+		</style>
+	</head>
+	<body>
+		<div id="gameContainer">
+			<!-- UI Section -->
+			<div id="ui">
+				<div id="statusBar">
+					<span id="levelDisplay">Level: <span id="level">1</span></span>
+					<span id="scoreDisplay">
+						Score: <span id="score">0</span>
+						<div id="highScorePopup">
+							High Score: <span id="highScore">0</span><br />
+							Total Regular Pickups:
+							<span id="popupTotalRegularPickupCount">0</span><br />
+							Total Dropped Pickups:
+							<span id="popupTotalDroppedPickupCount">0</span><br />
+							Total Levels Completed: <span id="levelsCompleted">0</span>
+						</div>
+					</span>
+					<div id="pickupCounts">
+						<span>
+							Regular Pickups: <span id="regularPickupCount">0</span> (<span
+								id="totalRegularPickupCount"
+								>0</span
+							>)
+						</span>
+						<span>
+							Dropped Pickups: <span id="droppedPickupCount">0</span> (<span
+								id="totalDroppedPickupCount"
+								>0</span
+							>)
+						</span>
+					</div>
+				</div>
+				<div id="buttons">
+					<button id="resetButton">Reset</button>
+					<button id="muteButton">Mute</button>
+					<button id="settingsButton">Settings</button>
+					<button id="mainMenuButton">Main Menu</button>
+				</div>
+			</div>
+			<!-- Canvas -->
+			<canvas id="canvas" width="800" height="600"></canvas>
+
+			<!-- Settings Modal -->
+			<div id="settingsModal" class="modal small-modal" style="display: none">
+				<div class="modal-content">
+					<h2>Settings</h2>
+
+					<!-- Display Settings -->
+					<div class="settings-section">
+						<h3>Display Settings</h3>
+						<!-- Screen Size Selector -->
+						<div class="setting-item">
+							<label for="screenSizeSelect">Screen Size:</label>
+							<select id="screenSizeSelect">
+								<option value="original">Original Size (800x600)</option>
+								<option value="fillWindow">Fill Browser Window</option>
+								<option value="fullscreen">Fullscreen</option>
+							</select>
+						</div>
+						<!-- Resolution Setting -->
+						<div class="setting-item">
+							<label for="resolution">Resolution</label>
+							<input type="range" id="resolution" min="5" max="50" value="10" />
+						</div>
+						<!-- Gamma Correction -->
+						<div class="setting-item">
+							<label for="gamma">Gamma Correction</label>
+							<input
+								type="range"
+								id="gamma"
+								min="0.1"
+								max="3.0"
+								step="0.1"
+								value="0.5"
+							/>
+						</div>
+					</div>
+
+					<!-- Radiance Settings -->
+					<div class="settings-section">
+						<h3>Radiance Settings</h3>
+						<!-- General Decay Factor -->
+						<div class="setting-item">
+							<label for="generalDecayFactor">General Decay Factor</label>
+							<input
+								type="range"
+								id="generalDecayFactor"
+								min="0.1"
+								max="1.0"
+								step="0.01"
+								value="0.6"
+							/>
+						</div>
+						<!-- Bilinear Interpolation Toggle -->
+						<div class="setting-item">
+							<label>
+								<input type="checkbox" id="bilinearInterpolationToggle" />
+								Use Bilinear Interpolation
+							</label>
+						</div>
+						<!-- Visible Bounds Buffer -->
+						<div class="setting-item">
+							<label for="visibleBoundsBuffer">Visible Bounds Buffer</label>
+							<input
+								type="number"
+								id="visibleBoundsBuffer"
+								min="0"
+								max="100"
+								value="16"
+							/>
+						</div>
+						<!-- Cascades Management -->
+						<div class="settings-section">
+							<details>
+								<summary>Cascades</summary>
+								<div id="cascadesList">
+									<!-- Cascades will be listed here dynamically -->
+								</div>
+								<button id="addCascadeButton">Add Cascade</button>
+							</details>
+						</div>
+						<!-- Blurring Kernel Size -->
+						<div class="setting-item">
+							<label for="blurringKernelSize">Blurring Kernel Size</label>
+							<select id="blurringKernelSize">
+								<option value="1">1x1 (No blur)</option>
+								<option value="3" selected>3x3</option>
+								<option value="5">5x5</option>
+							</select>
+						</div>
+					</div>
+
+					<!-- Audio Settings -->
+					<div class="settings-section">
+						<h3>Audio Settings</h3>
+						<!-- Music Volume -->
+						<div class="setting-item">
+							<label for="musicVolume">Music Volume</label>
+							<input
+								type="range"
+								id="musicVolume"
+								min="0"
+								max="100"
+								value="50"
+							/>
+						</div>
+						<!-- SFX Volume -->
+						<div class="setting-item">
+							<label for="sfxVolume">SFX Volume</label>
+							<input type="range" id="sfxVolume" min="0" max="100" value="50" />
+						</div>
+					</div>
+					<!-- Save and Default Buttons -->
+					<button id="saveSettingsButton">Save</button>
+					<button id="defaultSettingsButton">Default Settings</button>
+					<!-- Close Button -->
+					<button id="closeSettingsButton">Close</button>
+				</div>
+			</div>
+
+			<!-- Game Over Modal -->
+			<div id="gameOverModal" class="modal" style="display: none">
+				<div class="modal-content">
+					<h2>Game Over</h2>
+					<p>You were caught by an enemy!</p>
+					<button id="gameOverResetButton">Reset to Level 1</button>
+				</div>
+			</div>
+
+			<!-- Initial Intro Modal -->
+			<div id="initialIntroModal" class="modal">
+				<div class="modal-content">
+					<h1 class="game-title">Radiance</h1>
+					<!-- Optionally, add game art here -->
+					<p class="intro-text">Press any key to continue...</p>
+				</div>
+			</div>
+
+			<!-- Intro Modal -->
+			<div id="introModal" class="modal">
+				<div class="modal-content">
+					<div id="menuOptions">
+						<button class="menu-option" data-action="startNewGame">
+							Start New Game
+						</button>
+
+						<button
+							class="menu-option"
+							data-action="returnToGame"
+							id="returnToGameButton"
+							style="display: none"
+						>
+							Return to Game
+						</button>
+						<button class="menu-option" data-action="customGame">
+							Custom Game
+						</button>
+						<button class="menu-option" data-action="settings">Settings</button>
+						<button class="menu-option" data-action="help">Help</button>
+					</div>
+				</div>
+			</div>
+
+			<!-- Custom Game Settings Modal -->
+			<div id="customGameSettingsModal" class="modal" style="display: none">
+				<div class="modal-content">
+					<h2>Custom Game Settings</h2>
+					<form id="customGameForm">
+						<label>
+							Map Columns:
+							<input
+								type="number"
+								id="customMapCols"
+								value="100"
+								min="10"
+								max="1000"
+								step="10"
+							/>
+						</label>
+						<label>
+							Map Rows:
+							<input
+								type="number"
+								id="customMapRows"
+								value="100"
+								min="10"
+								max="1000"
+								step="10"
+							/>
+						</label>
+						<label>
+							Number of Rooms:
+							<input
+								type="number"
+								id="customNumRooms"
+								value="100"
+								min="5"
+								max="1000"
+							/>
+						</label>
+						<label>
+							Min Room Size:
+							<input
+								type="number"
+								id="customMinRoomSize"
+								value="4"
+								min="3"
+								max="20"
+							/>
+						</label>
+						<label>
+							Max Room Size:
+							<input
+								type="number"
+								id="customMaxRoomSize"
+								value="25"
+								min="5"
+								max="150"
+							/>
+						</label>
+						<label>
+							Light Spawn Chance (%):
+							<input
+								type="number"
+								id="customLightSpawnChance"
+								value="10"
+								min="0"
+								max="100"
+							/>
+						</label>
+						<label>
+							Pickup Spawn Chance (%):
+							<input
+								type="number"
+								id="customPickupSpawnChance"
+								value="8"
+								min="0"
+								max="100"
+							/>
+						</label>
+						<label>
+							Number of Enemies:
+							<input
+								type="number"
+								id="customNumEnemies"
+								value="5"
+								min="0"
+								max="50"
+							/>
+						</label>
+						<label>
+							Spawn Boss:
+							<input type="checkbox" id="customSpawnBoss" checked />
+						</label>
+						<button type="button" id="startCustomGameButton">Start Game</button>
+						<button type="button" id="cancelCustomGameButton">Cancel</button>
+					</form>
+				</div>
+			</div>
+
+			<!-- Level Completion Modal -->
+			<div id="levelCompleteModal" class="modal" style="display: none">
+				<div class="modal-content">
+					<h2>Level Complete!</h2>
+					<p id="levelCompleteMessage">You reached the exit.</p>
+
+					<!-- Display available pickups -->
+					<div id="shopPickups">
+						<p>Regular Pickups: <span id="shopRegularPickupCount">0</span></p>
+					</div>
+
+					<!-- Flashlight Upgrades -->
+					<div id="flashlightUpgrades" class="shop-section">
+						<h3>Flashlight Upgrades</h3>
+						<div class="upgrade-item">
+							<span
+								>Beam Length (Level: <span id="beamLengthLevel">1</span>)</span
+							>
+							<button data-upgrade="beamLength">
+								Upgrade (Cost: <span id="beamLengthCost">5</span>)
+							</button>
+						</div>
+						<div class="upgrade-item">
+							<span
+								>Beam Spread (Level: <span id="beamSpreadLevel">1</span>)</span
+							>
+							<button data-upgrade="beamSpread">
+								Upgrade (Cost: <span id="beamSpreadCost">5</span>)
+							</button>
+						</div>
+						<div class="upgrade-item">
+							<span
+								>Beam Decay (Level: <span id="beamDecayLevel">1</span>)</span
+							>
+							<button data-upgrade="beamDecay">
+								Upgrade (Cost: <span id="beamDecayCost">5</span>)
+							</button>
+						</div>
+					</div>
+
+					<button id="proceedNextLevelButton">Proceed to Next Level</button>
+				</div>
+			</div>
+		</div>
+
+		<script>
+			const canvas = document.getElementById("canvas");
+			const ctx = canvas.getContext("2d");
+			const gameContainer = document.getElementById("gameContainer");
+			//const screenSizeOptions = document.getElementsByName("screenSize");
+			const screenSizeSelect = document.getElementById("screenSizeSelect");
+
+			const resolutionSlider = document.getElementById("resolution");
+			const toggleFlashlightButton =
+				document.getElementById("toggleFlashlight");
+			const beamLengthSlider = document.getElementById("beamLength");
+			const beamDecaySlider = document.getElementById("beamDecay");
+			const beamSpreadSlider = document.getElementById("beamSpread");
+
+			let resolution = parseInt(resolutionSlider.value);
+			let radianceGrid, wallGrid, lightSourceGrid;
+			let scale = 1;
+
+			// Mouse position relative to canvas
+			let mouseX = 0;
+			let mouseY = 0;
+			// Camera variables
+			let cameraX = 0;
+			let cameraY = 0;
+
+			// Game-specific variables
+			let player = { x: 1, y: 1, direction: "up" };
+			let exit = { x: 0, y: 0 };
+			let gameWon = false;
+			let flashlightOn = true;
+
+			// Flashlight parameters
+			let beamLength;
+			let beamDecayFactor;
+			let beamSpread;
+
+			// General radiance decay factor
+			//const generalDecayFactor = 0.6;
+
+			let doorGrid; // Grid to represent doors
+			let lightSources = []; // Array to store light sources with their decay
+
+			let enemies = [];
+			const rooms = [];
+			let coloredWallGrid; // New grid for colored transparent walls
+
+			// Initialize cascading radiance grids with varying resolutions
+			let cascades = [
+				{ grid: null, resolutionFactor: 1, decay: 0.8 },
+				//{ grid: null, resolutionFactor: 2, decay: 0.5 },
+				//{ grid: null, resolutionFactor: 4, decay: 0.2 },
+			];
+
+			// Laser projectile variables
+			let projectile = null;
+
+			// Time variable for pulsating effect
+			let time = 0;
+			let level = 1;
+
+			// Movement Interval Tracking
+			const movementIntervals = {};
+			const MOVE_INTERVAL = 80; // Movement every 100 milliseconds (adjust as needed)
+
+			// Array to store pickup objects
+			let pickups = [];
+
+			// Adjustable spawn chance for pickups (percentage)
+			const pickupSpawnChance = 8; //  chance to spawn a pickup in a room
+			let regularPickupCount = 0;
+			let droppedPickupCount = 0;
+			// New variables for total counts
+			let totalRegularPickupCount = 0;
+			let totalDroppedPickupCount = 0;
+			// Adjustable parameters for pickup glow
+			const maxPickupIntensity = 1.0; // Maximum glow intensity for pickups
+			const minPickupIntensity = 0.1; // Minimum glow intensity for pickups
+			const pickupDecayAdjustmentFactor = 0.3; // How much to adjust decay based on proximity
+
+			// Adjustable parameters for exit light behavior
+			let pickupsToStartExitLight = 5; // Number of pickups needed to start emitting light
+			let pickupsForFullExitLight = 15; // Number of pickups for full brightness
+
+			//let spawnBoss = true;
+
+			//let useBilinearInterpolation = false;
+			let isPaused = false;
+
+			//sounds SFX
+			const pickupSoundOne = new Audio("audio/sfx/pickup.ogg"); //
+			const pickupSoundTwo = new Audio("audio/sfx/pickup2.ogg"); //
+			const laserShoot = new Audio("audio/sfx/laser-shoot.ogg"); //
+			const laserHit = new Audio("audio/sfx/laser-hit.ogg"); //
+			const endLevel = new Audio("audio/sfx/level-end.ogg"); //
+			const gameOver = new Audio("audio/sfx/game-over.ogg"); //
+			const menuScroll = new Audio("audio/sfx/menu-scroll.ogg");
+			const menuSelect = new Audio("audio/sfx/menu-select.ogg");
+			const error = new Audio("audio/sfx/error.ogg");
+			const enemyHit = new Audio("audio/sfx/enemy-hit.ogg");
+
+			//music
+
+			const musicTracks = [
+				new Audio("audio/music/1-0.ogg"),
+				new Audio("audio/music/1-1.ogg"),
+				new Audio("audio/music/1-2.ogg"),
+				new Audio("audio/music/1-3.ogg"),
+				new Audio("audio/music/1-4.ogg"),
+				new Audio("audio/music/1-5.ogg"),
+				new Audio("audio/music/1-end.ogg"),
+				new Audio("audio/music/3-0.ogg"),
+				new Audio("audio/music/3-1.ogg"),
+			];
+
+			let muted = false;
+			function playBackgroundMusic() {
+				// Stop current music if playing
+				if (currentMusic) {
+					currentMusic.pause();
+					currentMusic.currentTime = 0;
+				}
+
+				if (gameMode === "regular") {
+					switch (level) {
+						case 1 || "1":
+							currentMusicIndex = 1;
+							break;
+						case 2 || "2":
+							currentMusicIndex = 2;
+							break;
+						case 3 || "3":
+							currentMusicIndex = 3;
+							break;
+						case 4 || "4":
+							currentMusicIndex = 4;
+							break;
+						case 5 || "5":
+							currentMusicIndex = 5;
+							break;
+						case 6 || "6":
+							currentMusicIndex = 6;
+							break;
+
+						default:
+							currentMusicIndex = 6;
+							break;
+					}
+				} else if (gameMode === "custom") {
+					const rng = Math.random();
+					if (rng > 0.5) {
+						currentMusicIndex = 7;
+					} else {
+						currentMusicIndex = 8;
+					}
+				}
+
+				// Select the music track based on the current level
+
+				currentMusic = musicTracks[currentMusicIndex];
+
+				// Set volume based on settings
+				currentMusic.volume = musicVolume / 100;
+
+				// Set to loop
+				currentMusic.loop = true;
+
+				// Play the music
+				currentMusic.play();
+			}
+
+			const mainMenuButton = document.getElementById("mainMenuButton");
+			function showMainMenu() {
+				currentMusic.pause();
+
+				menuSelect.volume = sfxVolume / 100;
+				menuSelect.play();
+
+				introModal.style.display = "flex";
+				const hasSavedGame = localStorage.getItem("level") !== null;
+				// Determine which buttons to show
+				const returnToGameButton =
+					document.getElementById("returnToGameButton");
+				if (gameLoopRunning || isPaused || hasSavedGame) {
+					// Show 'Return to Game' when a game is in progress or paused
+					returnToGameButton.style.display = "inline-block";
+				} else {
+					// Hide 'Return to Game' when no game is in progress
+					returnToGameButton.style.display = "none";
+				}
+			}
+
+			// Call showMainMenu() whenever the main menu is displayed
+			mainMenuButton.addEventListener("click", () => {
+				isPaused = true;
+				showMainMenu();
+			});
+
+			mainMenuButton.addEventListener("click", () => {
+				// Pause the game loop
+				isPaused = true;
+
+				// Show the main menu modal
+				introModal.style.display = "flex";
+
+				// If you have a separate function to handle showing the main menu, you can call it here
+				showMainMenu();
+			});
+
+			const fullscreenToggle = document.getElementById("fullscreenToggle");
+
+			let score = 0;
+			let highScore = 0;
+			let levelsCompleted = 0;
+
+			// Upgrade Levels
+			let flashlightUpgrades = {
+				beamLength: 1,
+				beamSpread: 1,
+				beamDecay: 1,
+			};
+
+			// Base Upgrade Costs
+			const flashlightUpgradeCosts = {
+				beamLength: 5,
+				beamSpread: 5,
+				beamDecay: 5,
+			};
+
+			// Max Levels
+			const maxFlashlightUpgradeLevels = {
+				beamLength: 10,
+				beamSpread: 10,
+				beamDecay: 10,
+			};
+			let gameMode = "regular"; // or "custom"
+
+			// Base map size for Regular Mode
+			const baseMapSize = { rows: 100, cols: 100 }; // Starting size
+			const mapSizeIncrement = 10; // Increase per level
+
+			// Base enemy count for Regular Mode
+			const baseEnemyCount = 5;
+			const enemyIncrementLevel = 3; // Increase enemies every 3 levels
+			const enemyIncrementAmount = 2; // Increase by 2 enemies
+
+			// Base boss spawn settings
+			let spawnBoss = level % 5 === 0; // Spawn a boss every 5 levels
+
+			// Shop Pickup Counts
+			const shopRegularPickupCountDisplay = document.getElementById(
+				"shopRegularPickupCount"
+			);
+
+			// Flashlight Upgrade Elements
+			const beamLengthLevelDisplay = document.getElementById("beamLengthLevel");
+			const beamLengthCostDisplay = document.getElementById("beamLengthCost");
+			const beamLengthUpgradeButton = document.querySelector(
+				'button[data-upgrade="beamLength"]'
+			);
+
+			const beamSpreadLevelDisplay = document.getElementById("beamSpreadLevel");
+			const beamSpreadCostDisplay = document.getElementById("beamSpreadCost");
+			const beamSpreadUpgradeButton = document.querySelector(
+				'button[data-upgrade="beamSpread"]'
+			);
+
+			const beamDecayLevelDisplay = document.getElementById("beamDecayLevel");
+			const beamDecayCostDisplay = document.getElementById("beamDecayCost");
+			const beamDecayUpgradeButton = document.querySelector(
+				'button[data-upgrade="beamDecay"]'
+			);
+
+			// Flashlight Upgrade Buttons
+			beamLengthUpgradeButton.addEventListener("click", () => {
+				menuSelect.volume = sfxVolume / 100;
+				menuSelect.play();
+				return purchaseFlashlightUpgrade("beamLength");
+			});
+			beamSpreadUpgradeButton.addEventListener("click", () => {
+				menuSelect.volume = sfxVolume / 100;
+				menuSelect.play();
+				return purchaseFlashlightUpgrade("beamSpread");
+			});
+			beamDecayUpgradeButton.addEventListener("click", () => {
+				menuSelect.volume = sfxVolume / 100;
+				menuSelect.play();
+				return purchaseFlashlightUpgrade("beamDecay");
+			});
+
+			function purchaseFlashlightUpgrade(upgradeName) {
+				if (
+					flashlightUpgrades[upgradeName] >=
+					maxFlashlightUpgradeLevels[upgradeName]
+				) {
+					error.volume = sfxVolume / 100;
+					error.play();
+
+					//alert("Upgrade is already at max level!");
+					return;
+				}
+				const cost = getFlashlightUpgradeCost(upgradeName);
+				if (regularPickupCount >= cost) {
+					regularPickupCount -= cost;
+					flashlightUpgrades[upgradeName]++;
+
+					localStorage.setItem("regularPickupCount", regularPickupCount);
+					localStorage.setItem(
+						"flashlightUpgrades",
+						JSON.stringify(flashlightUpgrades)
+					);
+					menuSelect.volume = sfxVolume / 100;
+					menuSelect.play();
+
+					updatePickupCountsUI();
+					updateShopUI();
+					applyFlashlightUpgrades();
+				} else {
+					error.volume = sfxVolume / 100;
+					error.play();
+					//alert("Not enough regular pickups!");
+				}
+			}
+			function getFlashlightUpgradeCost(upgradeName) {
+				const baseCost = flashlightUpgradeCosts[upgradeName];
+				const level = flashlightUpgrades[upgradeName];
+				//return baseCost;
+				return baseCost + (level - 1) * 5; // Increase cost with each level
+			}
+			function updateShopUI() {
+				// Update pickup count
+				shopRegularPickupCountDisplay.textContent = regularPickupCount;
+
+				// Flashlight upgrades
+				updateUpgradeUI(
+					flashlightUpgrades.beamLength,
+					maxFlashlightUpgradeLevels.beamLength,
+					getFlashlightUpgradeCost("beamLength"),
+					regularPickupCount,
+					beamLengthLevelDisplay,
+					beamLengthCostDisplay,
+					beamLengthUpgradeButton
+				);
+
+				updateUpgradeUI(
+					flashlightUpgrades.beamSpread,
+					maxFlashlightUpgradeLevels.beamSpread,
+					getFlashlightUpgradeCost("beamSpread"),
+					regularPickupCount,
+					beamSpreadLevelDisplay,
+					beamSpreadCostDisplay,
+					beamSpreadUpgradeButton
+				);
+
+				updateUpgradeUI(
+					flashlightUpgrades.beamDecay,
+					maxFlashlightUpgradeLevels.beamDecay,
+					getFlashlightUpgradeCost("beamDecay"),
+					regularPickupCount,
+					beamDecayLevelDisplay,
+					beamDecayCostDisplay,
+					beamDecayUpgradeButton
+				);
+			}
+
+			function updateUpgradeUI(
+				currentLevel,
+				maxLevel,
+				cost,
+				availablePickups,
+				levelDisplay,
+				costDisplay,
+				upgradeButton
+			) {
+				levelDisplay.textContent = currentLevel;
+				costDisplay.textContent = cost;
+
+				if (currentLevel >= maxLevel) {
+					upgradeButton.disabled = true;
+					upgradeButton.textContent = "Max Level";
+				} else if (availablePickups < cost) {
+					upgradeButton.disabled = true;
+					upgradeButton.textContent = `Upgrade (Cost: ${cost})`;
+				} else {
+					upgradeButton.disabled = false;
+					upgradeButton.textContent = `Upgrade (Cost: ${cost})`;
+				}
+			}
+
+			// Proceed Button
+			const proceedNextLevelButton = document.getElementById(
+				"proceedNextLevelButton"
+			);
+
+			//retrieve level from local storage
+			if (localStorage.getItem("level")) {
+				level = parseInt(localStorage.getItem("level"), 10);
+			} else {
+				level = 1;
+			}
+			// Retrieve total pickups from local storage
+			if (localStorage.getItem("totalRegularPickupCount")) {
+				totalRegularPickupCount = parseInt(
+					localStorage.getItem("totalRegularPickupCount"),
+					10
+				);
+			} else {
+				totalRegularPickupCount = 0;
+			}
+
+			if (localStorage.getItem("totalDroppedPickupCount")) {
+				totalDroppedPickupCount = parseInt(
+					localStorage.getItem("totalDroppedPickupCount"),
+					10
+				);
+			} else {
+				totalDroppedPickupCount = 0;
+			}
+			//Retrieve high score from localStorage when the game loads:
+			if (localStorage.getItem("highScore")) {
+				highScore = parseInt(localStorage.getItem("highScore"), 10);
+			}
+			if (localStorage.getItem("levelsCompleted")) {
+				levelsCompleted = parseInt(localStorage.getItem("levelsCompleted"), 10);
+			}
+			// UI Elements
+			const levelElement = document.getElementById("level");
+
+			const regularPickupCountDisplay =
+				document.getElementById("regularPickupCount");
+			const droppedPickupCountDisplay =
+				document.getElementById("droppedPickupCount");
+			const totalRegularPickupCountDisplay = document.getElementById(
+				"totalRegularPickupCount"
+			);
+			const totalDroppedPickupCountDisplay = document.getElementById(
+				"totalDroppedPickupCount"
+			);
+
+			const muteButton = document.getElementById("muteButton");
+			const settingsButton = document.getElementById("settingsButton");
+			const resetButton = document.getElementById("resetButton");
+
+			const scoreElement = document.getElementById("score");
+			const highScoreElement = document.getElementById("highScore");
+			const popupTotalRegularPickupCountDisplay = document.getElementById(
+				"popupTotalRegularPickupCount"
+			);
+			const popupTotalDroppedPickupCountDisplay = document.getElementById(
+				"popupTotalDroppedPickupCount"
+			);
+			const levelsCompletedDisplay = document.getElementById("levelsCompleted");
+			const scoreDisplay = document.getElementById("scoreDisplay");
+
+			// Settings Modal Elements
+			const settingsModal = document.getElementById("settingsModal");
+			const closeSettingsButton = document.getElementById(
+				"closeSettingsButton"
+			);
+
+			// Audio Settings Elements
+			const musicVolumeSlider = document.getElementById("musicVolume");
+			const sfxVolumeSlider = document.getElementById("sfxVolume");
+
+			let musicVolume = parseInt(musicVolumeSlider.value, 10);
+			let sfxVolume = parseInt(sfxVolumeSlider.value, 10);
+
+			// Event listeners for the sliders
+			musicVolumeSlider.addEventListener("input", () => {
+				menuSelect.volume = sfxVolume / 100;
+				menuSelect.play();
+				musicVolume = parseInt(musicVolumeSlider.value, 10);
+			});
+
+			sfxVolumeSlider.addEventListener("input", () => {
+				menuSelect.volume = sfxVolume / 100;
+				menuSelect.play();
+				sfxVolume = parseInt(sfxVolumeSlider.value, 10);
+			});
+
+			const gammaSlider = document.getElementById("gamma");
+			let gamma = parseFloat(gammaSlider.value);
+
+			gammaSlider.addEventListener("input", () => {
+				gamma = parseFloat(gammaSlider.value);
+				if (isNaN(gamma) || gamma <= 0) {
+					gamma = 1;
+				}
+			});
+
+			// Radiance Settings Elements
+			const generalDecayFactorSlider =
+				document.getElementById("generalDecayFactor");
+			const bilinearInterpolationToggle = document.getElementById(
+				"bilinearInterpolationToggle"
+			);
+			const visibleBoundsBufferInput = document.getElementById(
+				"visibleBoundsBuffer"
+			);
+
+			// Cascades Settings Elements
+			const cascadesList = document.getElementById("cascadesList");
+			const addCascadeButton = document.getElementById("addCascadeButton");
+
+			let generalDecayFactor = parseFloat(generalDecayFactorSlider.value);
+			generalDecayFactorSlider.addEventListener("input", () => {
+				menuSelect.volume = sfxVolume / 100;
+				menuSelect.play();
+				generalDecayFactor = parseFloat(generalDecayFactorSlider.value);
+				// Re-propagate radiance if necessary
+			});
+
+			let useBilinearInterpolation = bilinearInterpolationToggle.checked;
+			bilinearInterpolationToggle.addEventListener("change", () => {
+				menuSelect.volume = sfxVolume / 100;
+				menuSelect.play();
+				useBilinearInterpolation = bilinearInterpolationToggle.checked;
+				// Redraw the scene if necessary
+			});
+
+			let visibleBoundsBuffer = parseInt(visibleBoundsBufferInput.value, 10);
+
+			// Event listeners for new settings
+			visibleBoundsBufferInput.addEventListener("change", () => {
+				menuSelect.volume = sfxVolume / 100;
+				menuSelect.play();
+				visibleBoundsBuffer = parseInt(visibleBoundsBufferInput.value, 10);
+				if (isNaN(visibleBoundsBuffer) || visibleBoundsBuffer < 0) {
+					visibleBoundsBuffer = 0;
+				}
+			});
+
+			const blurringKernelSizeSelect =
+				document.getElementById("blurringKernelSize");
+			let blurringKernelSize = parseInt(blurringKernelSizeSelect.value, 10);
+
+			blurringKernelSizeSelect.addEventListener("change", () => {
+				menuSelect.volume = sfxVolume / 100;
+				menuSelect.play();
+				blurringKernelSize = parseInt(blurringKernelSizeSelect.value, 10);
+				// Recalculate kernels or grids if necessary
+			});
+
+			// Function to Update Level UI
+			// Function to Update Level UI
+			function updateLevelUI() {
+				levelElement.textContent = level;
+			}
+
+			// Custom Game Settings Modal Elements
+			const customGameSettingsModal = document.getElementById(
+				"customGameSettingsModal"
+			);
+			const startCustomGameButton = document.getElementById(
+				"startCustomGameButton"
+			);
+			const cancelCustomGameButton = document.getElementById(
+				"cancelCustomGameButton"
+			);
+
+			const customMapColsInput = document.getElementById("customMapCols");
+			const customMapRowsInput = document.getElementById("customMapRows");
+			const customNumRoomsInput = document.getElementById("customNumRooms");
+			const customMinRoomSizeInput =
+				document.getElementById("customMinRoomSize");
+			const customMaxRoomSizeInput =
+				document.getElementById("customMaxRoomSize");
+			const customLightSpawnChanceInput = document.getElementById(
+				"customLightSpawnChance"
+			);
+			const customPickupSpawnChanceInput = document.getElementById(
+				"customPickupSpawnChance"
+			);
+			const customNumEnemiesInput = document.getElementById("customNumEnemies");
+			const customSpawnBossInput = document.getElementById("customSpawnBoss");
+			let customSettings = {
+				mapCols: 100,
+				mapRows: 100,
+				numRooms: 25,
+				minRoomSize: 4,
+				maxRoomSize: 15,
+				lightSpawnChance: 10,
+				pickupSpawnChance: 8,
+				numEnemies: 5,
+				spawnBoss: true,
+			};
+
+			// Menu Variables
+			const introModal = document.getElementById("introModal");
+			const menuOptions = Array.from(document.querySelectorAll(".menu-option"));
+			let currentOptionIndex = 0;
+
+			function setScreenSize(sizeOption) {
+				if (sizeOption === "original") {
+					disableFullscreen();
+					setOriginalSize();
+				} else if (sizeOption === "fillWindow") {
+					disableFullscreen();
+					setFillWindowSize();
+				} else if (sizeOption === "fullscreen") {
+					enableFullscreen();
+				}
+			}
+
+			startCustomGameButton.addEventListener("click", () => {
+				menuSelect.volume = sfxVolume / 100;
+				menuSelect.play();
+				// Retrieve values from inputs
+				customSettings.mapCols = parseInt(customMapColsInput.value, 10);
+				customSettings.mapRows = parseInt(customMapRowsInput.value, 10);
+				customSettings.numRooms = parseInt(customNumRoomsInput.value, 10);
+				customSettings.minRoomSize = parseInt(customMinRoomSizeInput.value, 10);
+				customSettings.maxRoomSize = parseInt(customMaxRoomSizeInput.value, 10);
+				customSettings.lightSpawnChance =
+					parseFloat(customLightSpawnChanceInput.value) / 100;
+				customSettings.pickupSpawnChance =
+					parseFloat(customPickupSpawnChanceInput.value) / 100;
+				customSettings.numEnemies = parseInt(customNumEnemiesInput.value, 10);
+				customSettings.spawnBoss = customSpawnBossInput.checked;
+
+				startCustomGame();
+			});
+
+			cancelCustomGameButton.addEventListener("click", () => {
+				menuSelect.volume = sfxVolume / 100;
+				menuSelect.play();
+
+				customGameSettingsModal.style.display = "none";
+				introModal.style.display = "flex";
+			});
+
+			function startCustomGame() {
+				introModal.style.display = "none";
+				gameMode = "custom";
+				level = 1;
+				regularPickupCount = 0;
+				droppedPickupCount = 0;
+				totalRegularPickupCount = 0;
+				totalDroppedPickupCount = 0;
+				score = 0;
+				levelsCompleted = 0;
+				flashlightUpgrades = {
+					beamLength: 1,
+					beamSpread: 1,
+					beamDecay: 1,
+				};
+				applyFlashlightUpgrades();
+
+				updateLevelUI();
+				updatePickupCountsUI();
+				updateScoreUI();
+
+				customGameSettingsModal.style.display = "none";
+
+				initializeGrids();
+				initializeEnemies();
+				propagateRadiance();
+				isPaused = false;
+				draw();
+
+				// Hide the intro modal if it's visible
+				introModal.style.display = "none";
+
+				// Start the game loop if not already running
+				if (!gameLoopRunning) {
+					gameLoop();
+				}
+			}
+
+			let currentMusicIndex = 0;
+			let currentMusic = musicTracks[currentMusicIndex];
+
+			currentMusic.loop = true;
+			currentMusic.volume = musicVolume / 100;
+
+			// Default Settings
+			const defaultSettings = {
+				screenSize: "fillWindow",
+				resolution: 20,
+				gamma: 0.8,
+				generalDecayFactor: 0.6,
+				useBilinearInterpolation: true,
+				visibleBoundsBuffer: 32,
+				blurringKernelSize: 1,
+				musicVolume: 50,
+				sfxVolume: 50,
+				cascades: [
+					{ resolutionFactor: 1, decay: 0.8 },
+					{ resolutionFactor: 2, decay: 0.6 },
+					{ resolutionFactor: 4, decay: 0.4 },
+					// Add more default cascades if needed
+				],
+			};
+			const saveSettingsButton = document.getElementById("saveSettingsButton");
+
+			saveSettingsButton.addEventListener("click", saveSettings);
+
+			function saveSettings() {
+				const settings = {
+					screenSize: screenSizeSelect.value,
+					resolution: parseInt(resolutionSlider.value),
+					gamma: parseFloat(gammaSlider.value),
+					generalDecayFactor: parseFloat(generalDecayFactorSlider.value),
+					useBilinearInterpolation: bilinearInterpolationToggle.checked,
+					visibleBoundsBuffer: parseInt(visibleBoundsBufferInput.value),
+					blurringKernelSize: parseInt(blurringKernelSizeSelect.value),
+					musicVolume: parseInt(musicVolumeSlider.value),
+					sfxVolume: parseInt(sfxVolumeSlider.value),
+					cascades: cascades.map((cascade) => ({
+						resolutionFactor: cascade.resolutionFactor,
+						decay: cascade.decay,
+					})),
+				};
+
+				localStorage.setItem("gameSettings", JSON.stringify(settings));
+
+				//alert("Settings saved!");
+			}
+			window.addEventListener("load", () => {
+				loadSettings();
+				// Other initialization code
+			});
+			function loadSettings() {
+				const savedSettings = localStorage.getItem("gameSettings");
+				if (savedSettings) {
+					const settings = JSON.parse(savedSettings);
+
+					// Apply settings to UI elements
+					screenSizeSelect.value = settings.screenSize;
+					resolutionSlider.value = settings.resolution;
+					gammaSlider.value = settings.gamma;
+					generalDecayFactorSlider.value = settings.generalDecayFactor;
+					bilinearInterpolationToggle.checked =
+						settings.useBilinearInterpolation;
+					visibleBoundsBufferInput.value = settings.visibleBoundsBuffer;
+					blurringKernelSizeSelect.value = settings.blurringKernelSize;
+					musicVolumeSlider.value = settings.musicVolume;
+					sfxVolumeSlider.value = settings.sfxVolume;
+
+					// Update variables
+					resolution = settings.resolution;
+					gamma = settings.gamma;
+					generalDecayFactor = settings.generalDecayFactor;
+					useBilinearInterpolation = settings.useBilinearInterpolation;
+					visibleBoundsBuffer = settings.visibleBoundsBuffer;
+					blurringKernelSize = settings.blurringKernelSize;
+					musicVolume = settings.musicVolume;
+					sfxVolume = settings.sfxVolume;
+
+					// Apply screen size setting
+					setScreenSize(settings.screenSize);
+
+					// Update cascades
+					cascades = settings.cascades.map((cascadeSettings) => ({
+						grid: null,
+						resolutionFactor: cascadeSettings.resolutionFactor,
+						decay: cascadeSettings.decay,
+					}));
+
+					renderCascadesList();
+					initializeCascadeGrids();
+
+					// Reinitialize game elements if necessary
+					initializeGrids();
+					propagateRadiance();
+					draw();
+				} else {
+					// No saved settings, use default settings
+					resetToDefaultSettings();
+				}
+			}
+			const defaultSettingsButton = document.getElementById(
+				"defaultSettingsButton"
+			);
+
+			defaultSettingsButton.addEventListener("click", resetToDefaultSettings);
+
+			function resetToDefaultSettings() {
+				// Set UI elements to default values
+				screenSizeSelect.value = defaultSettings.screenSize;
+				resolutionSlider.value = defaultSettings.resolution;
+				gammaSlider.value = defaultSettings.gamma;
+				generalDecayFactorSlider.value = defaultSettings.generalDecayFactor;
+				bilinearInterpolationToggle.checked =
+					defaultSettings.useBilinearInterpolation;
+				visibleBoundsBufferInput.value = defaultSettings.visibleBoundsBuffer;
+				blurringKernelSizeSelect.value = defaultSettings.blurringKernelSize;
+				musicVolumeSlider.value = defaultSettings.musicVolume;
+				sfxVolumeSlider.value = defaultSettings.sfxVolume;
+
+				// Update variables
+				resolution = defaultSettings.resolution;
+				gamma = defaultSettings.gamma;
+				generalDecayFactor = defaultSettings.generalDecayFactor;
+				useBilinearInterpolation = defaultSettings.useBilinearInterpolation;
+				visibleBoundsBuffer = defaultSettings.visibleBoundsBuffer;
+				blurringKernelSize = defaultSettings.blurringKernelSize;
+				musicVolume = defaultSettings.musicVolume;
+				sfxVolume = defaultSettings.sfxVolume;
+
+				// Apply screen size setting
+				setScreenSize(defaultSettings.screenSize);
+
+				// Reset cascades
+				cascades = defaultSettings.cascades.map((cascadeSettings) => ({
+					grid: null,
+					resolutionFactor: cascadeSettings.resolutionFactor,
+					decay: cascadeSettings.decay,
+				}));
+
+				renderCascadesList();
+				initializeCascadeGrids();
+
+				//alert("Settings reset to default values.");
+
+				// Reinitialize game elements if necessary
+				initializeGrids();
+				propagateRadiance();
+				draw();
+			}
+
+			// Event listener for screen size options
+			// screenSizeOptions.forEach((option) => {
+			// 	option.addEventListener("change", () => {
+			// 		if (option.checked) {
+			// 			setScreenSize(option.value);
+			// 		}
+			// 	});
+			// });
+
+			screenSizeSelect.addEventListener("change", () => {
+				const selectedOption = screenSizeSelect.value;
+				setScreenSize(selectedOption);
+			});
+
+			// Function to update the selected menu option
+			function updateMenuSelection(index) {
+				// Remove 'selected' class from all options
+				menuOptions.forEach((option) => option.classList.remove("selected"));
+
+				// Add 'selected' class to the current option
+				menuOptions[index].classList.add("selected");
+
+				// Ensure the option is focused for accessibility (optional)
+				menuOptions[index].focus();
+			}
+			function updateScoreUI() {
+				scoreElement.textContent = score;
+				highScoreElement.textContent = highScore;
+				popupTotalRegularPickupCountDisplay.textContent =
+					totalRegularPickupCount;
+				popupTotalDroppedPickupCountDisplay.textContent =
+					totalDroppedPickupCount;
+				levelsCompletedDisplay.textContent = levelsCompleted;
+			}
+
+			// Toggle high score popup on click
+			scoreDisplay.addEventListener("click", () => {
+				menuSelect.volume = sfxVolume / 100;
+				menuSelect.play();
+
+				const highScorePopup = document.getElementById("highScorePopup");
+				if (highScorePopup.style.display === "block") {
+					highScorePopup.style.display = "none";
+				} else {
+					highScorePopup.style.display = "block";
+				}
+			});
+
+			// Hide popup when clicking outside
+			document.addEventListener("click", (event) => {
+				const highScorePopup = document.getElementById("highScorePopup");
+				if (!scoreDisplay.contains(event.target)) {
+					highScorePopup.style.display = "none";
+				}
+			});
+			// Initialize the menu selection
+			updateMenuSelection(currentOptionIndex);
+
+			// Reference to the initial intro modal
+			const initialIntroModal = document.getElementById("initialIntroModal");
+			//const introModal = document.getElementById('introModal'); // Existing main menu modal
+
+			// Ensure the introModal is hidden initially
+			introModal.style.display = "none";
+
+			// Function to handle the first user interaction
+			function handleInitialInteraction() {
+				// Hide the initial intro modal
+				initialIntroModal.style.display = "none";
+
+				// Remove the event listeners to prevent further triggers
+				window.removeEventListener("keydown", handleInitialInteraction);
+				window.removeEventListener("mousedown", handleInitialInteraction);
+				window.removeEventListener("touchstart", handleInitialInteraction);
+
+				// Show the existing introModal (main menu modal)
+				introModal.style.display = "flex";
+
+				// Start background music or any audio if needed
+				// backgroundMusic.volume = musicVolume / 100;
+				// backgroundMusic.play();
+
+				// Any additional initialization
+			}
+
+			// Add event listeners for the first interaction
+			window.addEventListener("keydown", handleInitialInteraction);
+			window.addEventListener("mousedown", handleInitialInteraction);
+			window.addEventListener("touchstart", handleInitialInteraction);
+
+			//settings cascades list
+			function renderCascadesList() {
+				cascadesList.innerHTML = ""; // Clear the list
+
+				cascades.forEach((cascade, index) => {
+					// Create a div for the cascade
+					const cascadeDiv = document.createElement("div");
+					cascadeDiv.className = "cascade-item";
+
+					// Label for cascade number
+					const label = document.createElement("span");
+					label.textContent = `#${index + 1}`;
+					cascadeDiv.appendChild(label);
+
+					// Resolution Factor Input
+					const resolutionLabel = document.createElement("span");
+					resolutionLabel.textContent = "Res Factor:";
+					cascadeDiv.appendChild(resolutionLabel);
+
+					const resolutionFactorInput = document.createElement("input");
+					resolutionFactorInput.type = "number";
+					resolutionFactorInput.min = 1;
+					resolutionFactorInput.value = cascade.resolutionFactor;
+					resolutionFactorInput.addEventListener("change", () => {
+						const value = parseInt(resolutionFactorInput.value);
+						cascade.resolutionFactor = value > 0 ? value : 1;
+						initializeCascadeGrids();
+					});
+					cascadeDiv.appendChild(resolutionFactorInput);
+
+					// Decay Input
+					const decayLabel = document.createElement("span");
+					decayLabel.textContent = "Decay:";
+					cascadeDiv.appendChild(decayLabel);
+
+					const decayInput = document.createElement("input");
+					decayInput.type = "number";
+					decayInput.min = 0.1;
+					decayInput.max = 1.0;
+					decayInput.step = 0.01;
+					decayInput.value = cascade.decay;
+					decayInput.addEventListener("change", () => {
+						const value = parseFloat(decayInput.value);
+						cascade.decay = value >= 0.1 && value <= 1.0 ? value : 0.6;
+					});
+					cascadeDiv.appendChild(decayInput);
+
+					// Remove button
+					const removeButton = document.createElement("button");
+					removeButton.textContent = "Remove";
+					removeButton.addEventListener("click", () => {
+						cascades.splice(index, 1);
+						renderCascadesList();
+						initializeCascadeGrids();
+					});
+					cascadeDiv.appendChild(removeButton);
+
+					// Append cascadeDiv to cascadesList
+					cascadesList.appendChild(cascadeDiv);
+				});
+			}
+
+			addCascadeButton.addEventListener("click", () => {
+				menuSelect.volume = sfxVolume / 100;
+				menuSelect.play();
+
+				cascades.push({ grid: null, resolutionFactor: 1, decay: 0.8 });
+				renderCascadesList();
+				initializeCascadeGrids();
+			});
+			settingsButton.addEventListener("click", () => {
+				menuSelect.volume = sfxVolume / 100;
+				menuSelect.play();
+
+				introModal.style.display = "none";
+				settingsModal.style.display = "flex";
+				renderCascadesList(); // Render cascades when settings are opened
+			});
+
+			// Function to create a radiance grid
+			function createRadianceGrid(resolutionFactor) {
+				const cols = Math.ceil(wallGrid[0].length / resolutionFactor);
+				const rows = Math.ceil(wallGrid.length / resolutionFactor);
+				return Array.from({ length: rows }, () =>
+					Array.from({ length: cols }, () => ({
+						intensity: 0,
+						color: { r: 0, g: 0, b: 0 },
+					}))
+				);
+			}
+
+			// Initialize grids for each cascade
+			function initializeCascadeGrids() {
+				for (const cascade of cascades) {
+					cascade.grid = createRadianceGrid(cascade.resolutionFactor);
+				}
+			}
+
+			// Function to reset a radiance grid
+			function resetRadianceGrid(grid) {
+				for (let y = 0; y < grid.length; y++) {
+					for (let x = 0; x < grid[0].length; x++) {
+						grid[y][x] = { intensity: 0, color: { r: 0, g: 0, b: 0 } };
+					}
+				}
+			}
+
+			function propagateLightSource(
+				x,
+				y,
+				decay,
+				grid,
+				resolutionFactor,
+				color,
+				sourceIntensity = 1,
+				bounds
+			) {
+				const gx = Math.floor(x / resolutionFactor);
+				const gy = Math.floor(y / resolutionFactor);
+
+				if (
+					gx < bounds.minGX ||
+					gx > bounds.maxGX ||
+					gy < bounds.minGY ||
+					gy > bounds.maxGY
+				) {
+					return; // Skip propagation outside bounds
+				}
+				// Set the initial intensity based on the source's current intensity
+				grid[gy][gx] = { intensity: sourceIntensity, color };
+
+				let queue = [{ x: gx, y: gy, intensity: sourceIntensity, color }];
+
+				while (queue.length > 0) {
+					const { x, y, intensity, color } = queue.shift();
+					// Early exit if out of bounds
+					if (
+						x < bounds.minGX ||
+						x > bounds.maxGX ||
+						y < bounds.minGY ||
+						y > bounds.maxGY
+					) {
+						continue;
+					}
+					const neighbors = [
+						{ x: x + 1, y },
+						{ x: x - 1, y },
+						{ x, y: y + 1 },
+						{ x, y: y - 1 },
+					];
+
+					for (const neighbor of neighbors) {
+						if (
+							neighbor.x >= 0 &&
+							neighbor.x < grid[0].length &&
+							neighbor.y >= 0 &&
+							neighbor.y < grid.length
+						) {
+							const newIntensity = intensity * decay;
+
+							if (newIntensity > grid[neighbor.y][neighbor.x].intensity) {
+								grid[neighbor.y][neighbor.x] = {
+									intensity: newIntensity,
+									color,
+								};
+								const worldX = neighbor.x * resolutionFactor;
+								const worldY = neighbor.y * resolutionFactor;
+								if (!wallGrid[worldY][worldX]) {
+									queue.push({
+										x: neighbor.x,
+										y: neighbor.y,
+										intensity: newIntensity,
+										color,
+									});
+								}
+							}
+						}
+					}
+				}
+			}
+
+			function addEnemy(
+				x,
+				y,
+				type = "random",
+				beamLength = 40,
+				beamDecay = 0.9
+			) {
+				const enemy = {
+					x,
+					y,
+					type, // "random", "tracking", or "boss"
+					direction: "down",
+					beamLength,
+					beamDecay,
+					lastMove: 0,
+					flashlightAngle: 0,
+				};
+
+				if (type === "boss") {
+					enemy.path = [];
+					enemy.pathIndex = 0;
+					enemy.lastPlayerX = player.x;
+					enemy.lastPlayerY = player.y;
+				}
+
+				enemies.push(enemy);
+			}
+
+			// Initialize enemies after generating the maze
+			function initializeEnemies() {
+				enemies = []; // Clear existing enemies
+
+				let numEnemies;
+				if (gameMode === "regular") {
+					numEnemies =
+						baseEnemyCount +
+						Math.floor((level - 1) / enemyIncrementLevel) *
+							enemyIncrementAmount;
+					spawnBoss = level % 5 === 0;
+				} else if (gameMode === "custom") {
+					numEnemies = customSettings.numEnemies;
+					spawnBoss = customSettings.spawnBoss;
+				}
+
+				for (let i = 0; i < numEnemies; i++) {
+					// Randomly select a room
+					const room = rooms[Math.floor(Math.random() * rooms.length)];
+
+					// Initialize variables for enemy placement
+					let x, y;
+					let attempts = 0;
+					const maxAttempts = 10; // Maximum attempts to place an enemy
+
+					// Attempt to find a valid position within the room
+					do {
+						x = Math.floor(Math.random() * (room.width - 2)) + room.x + 1;
+						y = Math.floor(Math.random() * (room.height - 2)) + room.y + 1;
+						attempts++;
+
+						if (attempts > maxAttempts) {
+							console.warn(
+								`Failed to place enemy ${i + 1} after ${maxAttempts} attempts.`
+							);
+							break; // Exit the loop if maximum attempts are reached
+						}
+					} while (wallGrid[y][x] || doorGrid[y][x]); // Ensure the tile is not a wall or door
+
+					// Add the enemy if a valid position is found
+					if (!wallGrid[y][x] && !doorGrid[y][x]) {
+						addEnemy(x, y, "tracking"); // Set to "tracking" or "random" as desired
+					}
+				}
+
+				if (spawnBoss) {
+					let bossRoomIndex =
+						Math.floor(Math.random() * (rooms.length - 1)) + 1; // Exclude first room
+
+					const bossRoom = rooms[bossRoomIndex];
+
+					let x, y;
+					let attempts = 0;
+					const maxAttempts = 10;
+
+					do {
+						x =
+							Math.floor(Math.random() * (bossRoom.width - 2)) + bossRoom.x + 1;
+						y =
+							Math.floor(Math.random() * (bossRoom.height - 2)) +
+							bossRoom.y +
+							1;
+						attempts++;
+
+						if (attempts > maxAttempts) {
+							console.warn(
+								`Failed to place boss after ${maxAttempts} attempts.`
+							);
+							break;
+						}
+					} while (wallGrid[y][x] || doorGrid[y][x]);
+
+					if (!wallGrid[y][x] && !doorGrid[y][x]) {
+						addEnemy(x, y, "boss"); // Set type to "boss"
+					}
+				}
+			}
+
+			initializeGrids();
+			initializeCascadeGrids();
+			initializeEnemies();
+
+			function updatePickupCountsUI() {
+				regularPickupCountDisplay.textContent = regularPickupCount;
+				droppedPickupCountDisplay.textContent = droppedPickupCount;
+				totalRegularPickupCountDisplay.textContent = totalRegularPickupCount;
+				totalDroppedPickupCountDisplay.textContent = totalDroppedPickupCount;
+			}
+
+			function setOriginalSize() {
+				// Set canvas and game container to original size
+				gameContainer.style.width = "800px";
+				gameContainer.style.height = "600px";
+				canvas.style.width = "800px";
+				canvas.style.height = "600px";
+				canvas.width = 800;
+				canvas.height = 600;
+				// Center the game container
+				gameContainer.style.margin = "0 auto";
+				gameContainer.style.position = "";
+				gameContainer.style.left = "";
+				gameContainer.style.top = "";
+				gameContainer.style.transform = "";
+				// Remove resize listener
+				window.removeEventListener("resize", resizeCanvas);
+				resizeCanvas();
+			}
+
+			function setFillWindowSize() {
+				// Set gameContainer to fill the window
+				gameContainer.style.width = "100%";
+				gameContainer.style.height = "100%";
+				gameContainer.style.margin = "0";
+				gameContainer.style.position = "";
+				gameContainer.style.left = "";
+				gameContainer.style.top = "";
+				gameContainer.style.transform = "";
+				// Adjust canvas size accordingly
+				canvas.style.width = "100%";
+				canvas.style.height = "100%";
+				canvas.width = canvas.clientWidth;
+				canvas.height = canvas.clientHeight;
+				// Add resize listener
+				window.addEventListener("resize", resizeCanvas);
+				resizeCanvas();
+			}
+
+			function enableFullscreen() {
+				if (gameContainer.requestFullscreen) {
+					gameContainer.requestFullscreen();
+				} else if (gameContainer.webkitRequestFullscreen) {
+					/* Safari */
+					gameContainer.webkitRequestFullscreen();
+				} else if (gameContainer.msRequestFullscreen) {
+					/* IE11 */
+					gameContainer.msRequestFullscreen();
+				}
+				// Set gameContainer to fill the screen
+				gameContainer.style.width = "100%";
+				gameContainer.style.height = "100%";
+				gameContainer.style.margin = "0";
+				// Adjust canvas size accordingly
+				canvas.style.width = "100%";
+				canvas.style.height = "100%";
+				window.addEventListener("resize", resizeCanvas);
+				resizeCanvas();
+			}
+
+			function disableFullscreen() {
+				if (document.exitFullscreen) {
+					document.exitFullscreen();
+				} else if (document.webkitExitFullscreen) {
+					/* Safari */
+					document.webkitExitFullscreen();
+				} else if (document.msExitFullscreen) {
+					/* IE11 */
+					document.msExitFullscreen();
+				}
+				// Remove resize listener
+				window.removeEventListener("resize", resizeCanvas);
+			}
+
+			function resizeCanvas() {
+				// Set canvas dimensions to match its display size
+				canvas.width = canvas.clientWidth;
+				canvas.height = canvas.clientHeight;
+				draw(); // Redraw the scene with the new canvas size
+			}
+
+			// Call resizeCanvas() initially to set up the canvas size
+			resizeCanvas();
+
+			// Event listener for mute button (placeholder)
+			muteButton.addEventListener("click", () => {
+				let prevSfxVol = sfxVolume;
+				let prevMusicVol = musicVolume;
+				if (!muted) {
+					menuSelect.volume = sfxVolume / 100;
+					menuSelect.play();
+					sfxVolume = 0;
+					musicVolume = 0;
+					muted = true;
+				} else {
+					sfxVolume = prevSfxVol;
+					musicVolume = prevMusicVol;
+					menuSelect.volume = sfxVolume / 100;
+					menuSelect.play();
+					muted = false;
+				}
+			});
+
+			closeSettingsButton.addEventListener("click", () => {
+				menuSelect.volume = sfxVolume / 100;
+				menuSelect.play();
+
+				settingsModal.style.display = "none";
+				// If the game hasn't started, return to intro modal
+				if (!gameLoopRunning) {
+					introModal.style.display = "flex";
+				}
+			});
+			// Event listener for mouse movement
+			// Adjust mouse coordinates according to the new canvas size
+			canvas.addEventListener("mousemove", (e) => {
+				const rect = canvas.getBoundingClientRect();
+				const scaleX = canvas.width / rect.width;
+				const scaleY = canvas.height / rect.height;
+
+				mouseX = (e.clientX - rect.left) * scaleX;
+				mouseY = (e.clientY - rect.top) * scaleY;
+				updateFlashlightDirection();
+			});
+
+			// Event listener for mouse click to shoot the laser
+			canvas.addEventListener("mousedown", (e) => {
+				if (e.button === 0) {
+					// Left mouse button
+					shootProjectile();
+				}
+			});
+
+			resolutionSlider.addEventListener("input", () => {
+				resolution = parseInt(resolutionSlider.value);
+				initializeGrids();
+				initializeCascadeGrids();
+			});
+
+			document.addEventListener("keydown", (e) => {
+				if (gameWon) return;
+				const key = e.key;
+
+				// Define the movement directions based on the key pressed
+				const directionMap = {
+					ArrowUp: "up",
+					w: "up",
+					ArrowDown: "down",
+					s: "down",
+					ArrowLeft: "left",
+					a: "left",
+					ArrowRight: "right",
+					d: "right",
+				};
+
+				// Check if the pressed key is a movement key
+				if (key in directionMap) {
+					const direction = directionMap[key];
+					let newX = player.x;
+					let newY = player.y;
+
+					// Determine the new position based on direction
+					switch (direction) {
+						case "up":
+							newY--;
+							break;
+						case "down":
+							newY++;
+							break;
+						case "left":
+							newX--;
+							break;
+						case "right":
+							newX++;
+							break;
+					}
+
+					// Trigger immediate movement
+					movePlayer(newX, newY, direction);
+
+					// Prevent multiple intervals for the same key
+					if (!movementIntervals[key]) {
+						movementIntervals[key] = setInterval(() => {
+							let moveX = player.x;
+							let moveY = player.y;
+							let dir = player.direction;
+
+							switch (directionMap[key]) {
+								case "up":
+									moveY--;
+									dir = "up";
+									break;
+								case "down":
+									moveY++;
+									dir = "down";
+									break;
+								case "left":
+									moveX--;
+									dir = "left";
+									break;
+								case "right":
+									moveX++;
+									dir = "right";
+									break;
+							}
+
+							movePlayer(moveX, moveY, dir);
+						}, MOVE_INTERVAL); // Move every MOVE_INTERVAL milliseconds
+					}
+
+					e.preventDefault(); // Prevent default actions like scrolling
+				}
+			});
+			document.addEventListener("keydown", (e) => {
+				if (introModal.style.display !== "none") {
+					const key = e.key.toLowerCase();
+
+					if (key === "arrowup" || key === "w") {
+						// Move up
+						currentOptionIndex =
+							(currentOptionIndex - 1 + menuOptions.length) %
+							menuOptions.length;
+						updateMenuSelection(currentOptionIndex);
+					} else if (key === "arrowdown" || key === "s") {
+						// Move down
+						currentOptionIndex = (currentOptionIndex + 1) % menuOptions.length;
+						updateMenuSelection(currentOptionIndex);
+					} else if (key === "enter" || key === " ") {
+						// Activate the selected option
+						const action =
+							menuOptions[currentOptionIndex].getAttribute("data-action");
+						handleMenuAction(action);
+					}
+				}
+			});
+			// Event listeners for mouse interactions
+			menuOptions.forEach((option, index) => {
+				option.addEventListener("mouseover", () => {
+					menuScroll.pause();
+					menuScroll.currentTime = 0;
+					menuScroll.volume = sfxVolume / 100;
+					menuScroll.play();
+
+					currentOptionIndex = index;
+					updateMenuSelection(currentOptionIndex);
+				});
+
+				option.addEventListener("click", () => {
+					menuSelect.volume = sfxVolume / 100;
+					menuSelect.play();
+
+					const action = option.getAttribute("data-action");
+					handleMenuAction(action);
+				});
+			});
+			document.addEventListener("keyup", (e) => {
+				const key = e.key;
+
+				// Check if the released key is a movement key and has an active interval
+				if (key in movementIntervals) {
+					clearInterval(movementIntervals[key]);
+					delete movementIntervals[key];
+				}
+			});
+			function handleMenuAction(action) {
+				if (action === "startNewGame") {
+					// Reset game state and start a new game
+					gameMode = "regular";
+					level = 1;
+					regularPickupCount = 0;
+					droppedPickupCount = 0;
+					totalRegularPickupCount = 0;
+					totalDroppedPickupCount = 0;
+					score = 0; // Reset score
+					levelsCompleted = 0; // Reset levels completed
+					flashlightUpgrades = {
+						beamLength: 1,
+						beamSpread: 1,
+						beamDecay: 1,
+					};
+					applyFlashlightUpgrades();
+
+					localStorage.setItem("level", level);
+					localStorage.setItem("regularPickupCount", regularPickupCount);
+					localStorage.setItem("droppedPickupCount", droppedPickupCount);
+					localStorage.setItem(
+						"totalRegularPickupCount",
+						totalRegularPickupCount
+					);
+					localStorage.setItem(
+						"totalDroppedPickupCount",
+						totalDroppedPickupCount
+					);
+					localStorage.setItem("score", score);
+					localStorage.setItem("levelsCompleted", levelsCompleted);
+					localStorage.setItem(
+						"flashlightUpgrades",
+						JSON.stringify(flashlightUpgrades)
+					);
+
+					updateLevelUI();
+					updatePickupCountsUI();
+					updateScoreUI();
+					initializeGrids();
+					initializeEnemies();
+					propagateRadiance();
+					isPaused = false;
+					draw();
+
+					// Hide the intro modal
+					introModal.style.display = "none";
+
+					// Start the game loop if not already running
+					if (!gameLoopRunning) {
+						gameLoop();
+					}
+				}
+				// else if (action === "continueGame") {
+				// 	// Load game state from localStorage and continue
+				// 	level = parseInt(localStorage.getItem("level")) || 1;
+				// 	totalRegularPickupCount =
+				// 		parseInt(localStorage.getItem("totalRegularPickupCount")) || 0;
+				// 	totalDroppedPickupCount =
+				// 		parseInt(localStorage.getItem("totalDroppedPickupCount")) || 0;
+				// 	updateLevelUI();
+				// 	updatePickupCountsUI();
+				// 	updateScoreUI();
+				// 	initializeGrids();
+				// 	initializeEnemies();
+				// 	propagateRadiance();
+				// 	draw();
+
+				// 	// Hide the intro modal
+				// 	introModal.style.display = "none";
+
+				// 	// Start the game loop if not already running
+				// 	if (!gameLoopRunning) {
+				// 		gameLoop();
+				// 	}
+				// }
+				else if (action === "returnToGame") {
+					const hasSavedGame = localStorage.getItem("level") !== null;
+
+					if (gameLoopRunning || isPaused) {
+						// Resume the current game
+						introModal.style.display = "none";
+						isPaused = false;
+						currentMusic.play();
+						if (!gameLoopRunning) {
+							gameLoop();
+						}
+					} else if (hasSavedGame) {
+						// Load the saved game
+						loadGame();
+						introModal.style.display = "none";
+						isPaused = false;
+						currentMusic.play();
+						if (!gameLoopRunning) {
+							gameLoop();
+						}
+					}
+				} else if (action === "customGame") {
+					// Open the custom game settings modal
+					customGameSettingsModal.style.display = "flex";
+				} else if (action === "settings") {
+					// Open the settings modal
+					settingsModal.style.display = "flex";
+				} else if (action === "help") {
+					// Display help information
+					showHelpModal();
+				}
+			}
+			function loadGame() {
+				// Retrieve game state from localStorage
+				level = parseInt(localStorage.getItem("level")) || 1;
+				totalRegularPickupCount =
+					parseInt(localStorage.getItem("totalRegularPickupCount")) || 0;
+				totalDroppedPickupCount =
+					parseInt(localStorage.getItem("totalDroppedPickupCount")) || 0;
+				regularPickupCount =
+					parseInt(localStorage.getItem("regularPickupCount")) || 0;
+				droppedPickupCount =
+					parseInt(localStorage.getItem("droppedPickupCount")) || 0;
+				levelsCompleted =
+					parseInt(localStorage.getItem("levelsCompleted")) || 0;
+				score = parseInt(localStorage.getItem("score")) || 0;
+
+				// Load flashlightUpgrades
+				const savedFlashlightUpgrades =
+					localStorage.getItem("flashlightUpgrades");
+				if (savedFlashlightUpgrades) {
+					flashlightUpgrades = JSON.parse(savedFlashlightUpgrades);
+					applyFlashlightUpgrades();
+				} else {
+					// Initialize to default if not found
+					flashlightUpgrades = {
+						beamLength: 1,
+						beamSpread: 1,
+						beamDecay: 1,
+					};
+					applyFlashlightUpgrades();
+				}
+
+				// Update UI elements
+				updateLevelUI();
+				updatePickupCountsUI();
+				updateScoreUI();
+				updateShopUI(); // Update shop UI to reflect loaded upgrades
+
+				// Initialize game elements
+				initializeGrids();
+				initializeEnemies();
+				propagateRadiance();
+				draw();
+			}
+
+			// Function to show the help modal
+			function showHelpModal() {
+				// Create and display a help modal (you can customize the content)
+				const helpModal = document.createElement("div");
+				helpModal.className = "modal";
+				helpModal.innerHTML = `
+        <div class="modal-content">
+            <h2>Help & Instructions</h2>
+            <div class="help-section">
+                <h3>Controls</h3>
+                <ul>
+                    <li><strong>Movement:</strong> Use <kbd>W</kbd>, <kbd>A</kbd>, <kbd>S</kbd>, <kbd>D</kbd> or Arrow Keys to move.</li>
+                    <li><strong>Flashlight:</strong> Move the mouse to aim your flashlight.</li>
+                    <li><strong>Shoot:</strong> Left-click to shoot.</li>
+                    <li><strong>Mute:</strong> Press <kbd>M</kbd> to mute/unmute audio.</li>
+                </ul>
+            </div>
+            <div class="help-section">
+                <h3>Graphics Settings</h3>
+                <p>You can adjust the graphics settings to optimize performance or enhance visual quality:</p>
+                <ul>
+                    <li><strong>Resolution:</strong> Adjusts the size of each tile. Lower values increase detail but may impact performance.</li>
+                    <li><strong>Gamma Correction:</strong> Alters the brightness and contrast of the game.</li>
+                    <li><strong>Blurring Kernel Size:</strong> Controls the softness of lighting effects. Larger kernels produce smoother lighting but may reduce performance.</li>
+                    <li><strong>Bilinear Interpolation:</strong> When enabled, smooths the lighting by interpolating between pixels.</li>
+                </ul>
+            </div>
+            
+            <button id="closeHelpButton">Close</button>
+        </div>
+    `;
+				document.body.appendChild(helpModal);
+
+				// Close the help modal
+				document
+					.getElementById("closeHelpButton")
+					.addEventListener("click", () => {
+						menuSelect.volume = sfxVolume / 100;
+						menuSelect.play();
+						helpModal.remove();
+					});
+			}
+
+			// Update flashlight direction based on mouse position
+			function updateFlashlightDirection() {
+				const playerScreenX = (player.x - cameraX) * resolution;
+				const playerScreenY = (player.y - cameraY) * resolution;
+				const dx = mouseX - playerScreenX;
+				const dy = mouseY - playerScreenY;
+				player.flashlightAngle = Math.atan2(dy, dx);
+			}
+
+			function moveEnemies() {
+				for (let enemy of enemies) {
+					let { x, y, type, direction } = enemy;
+					if (type === "random") {
+						// Random movement
+						let options = [
+							{ dx: 0, dy: -1, dir: "up" },
+							{ dx: 0, dy: 1, dir: "down" },
+							{ dx: -1, dy: 0, dir: "left" },
+							{ dx: 1, dy: 0, dir: "right" },
+						];
+						const choice = options[Math.floor(Math.random() * options.length)];
+						moveEnemy(enemy, x + choice.dx, y + choice.dy, choice.dir);
+					} else if (type === "tracking") {
+						// Simple tracking movement towards player
+						let dx = player.x - x;
+						let dy = player.y - y;
+						if (Math.abs(dx) > Math.abs(dy)) {
+							direction = dx > 0 ? "right" : "left";
+							x += dx > 0 ? 1 : -1;
+						} else {
+							direction = dy > 0 ? "down" : "up";
+							y += dy > 0 ? 1 : -1;
+						}
+						moveEnemy(enemy, x, y, direction);
+
+						// Update enemy flashlight angle towards player
+						enemy.flashlightAngle = Math.atan2(player.y - y, player.x - x);
+					} else if (type === "boss") {
+						// Better pathfinding using BFS
+						if (
+							enemy.lastPlayerX !== player.x ||
+							enemy.lastPlayerY !== player.y ||
+							!enemy.path ||
+							enemy.pathIndex >= enemy.path.length
+						) {
+							enemy.path = findPath(x, y, player.x, player.y);
+							enemy.pathIndex = 0;
+							enemy.lastPlayerX = player.x;
+							enemy.lastPlayerY = player.y;
+						}
+
+						if (enemy.path && enemy.path.length > 0) {
+							const nextStep = enemy.path[enemy.pathIndex];
+							const dx = nextStep.x - x;
+							const dy = nextStep.y - y;
+
+							// Update direction based on movement
+							if (dx === 1) {
+								direction = "right";
+							} else if (dx === -1) {
+								direction = "left";
+							} else if (dy === 1) {
+								direction = "down";
+							} else if (dy === -1) {
+								direction = "up";
+							}
+
+							moveEnemy(enemy, nextStep.x, nextStep.y, direction);
+
+							enemy.pathIndex++;
+						}
+					}
+				}
+			}
+
+			function propagateEnemyFlashlights(cascade) {
+				for (const enemy of enemies) {
+					if (enemy.type !== "boss") {
+						propagateFlashlightBeam(
+							enemy.x,
+							enemy.y,
+							enemy.flashlightAngle,
+							beamSpread,
+							enemy.beamLength,
+							enemy.beamDecay,
+							cascade.grid,
+							cascade.resolutionFactor
+						);
+					}
+				}
+			}
+
+			function moveEnemy(enemy, newX, newY, direction) {
+				if (!wallGrid[newY][newX] && !doorGrid[newY][newX]) {
+					// Avoid walls/doors
+					enemy.x = newX;
+					enemy.y = newY;
+					enemy.direction = direction;
+				}
+			}
+			function clearAllMovementIntervals() {
+				for (const key in movementIntervals) {
+					clearInterval(movementIntervals[key]);
+				}
+				// Reset the movementIntervals object
+				for (const key in movementIntervals) {
+					delete movementIntervals[key];
+				}
+			}
+
+			function initializeGrids() {
+				clearAllMovementIntervals();
+
+				// Calculate map size based on level
+				let mapRows, mapCols;
+				if (gameMode === "regular") {
+					mapCols = baseMapSize.cols + (level - 1) * mapSizeIncrement;
+					mapRows = baseMapSize.rows + (level - 1) * mapSizeIncrement;
+				} else if (gameMode === "custom") {
+					mapCols = customSettings.mapCols;
+					mapRows = customSettings.mapRows;
+				}
+
+				wallGrid = Array.from({ length: mapRows }, () =>
+					Array(mapCols).fill(true)
+				); // Start with walls
+				doorGrid = Array.from({ length: mapRows }, () =>
+					Array(mapCols).fill(false)
+				); // Initialize door grid
+				lightSourceGrid = Array.from({ length: mapRows }, () =>
+					Array(mapCols).fill(false)
+				);
+				lightSources = []; // Reset light sources array
+				pickups = []; // Reset pickups array
+				// Reset player position
+				player = { x: 1, y: 1, direction: "up", flashlightAngle: 0 };
+				gameWon = false;
+
+				// Other grid initializations
+				coloredWallGrid = Array.from({ length: mapRows }, () =>
+					Array(mapCols).fill(null)
+				);
+
+				// Generate the maze
+				generateMaze();
+
+				// Add the exit as a dynamic light source for pulsating effect
+				lightSources.push({
+					x: exit.x,
+					y: exit.y,
+					decay: 0.4,
+					color: { r: 0, g: 200, b: 0 }, // Initial green color
+					intensity: 0, // Start with zero intensity
+
+					isExit: true, // Custom property to identify the exit light source
+				});
+				playBackgroundMusic();
+				// Initialize cascade grids
+				initializeCascadeGrids();
+			}
+			function findPath(startX, startY, endX, endY) {
+				const queue = [{ x: startX, y: startY, path: [] }];
+				const visited = Array.from({ length: wallGrid.length }, () =>
+					Array(wallGrid[0].length).fill(false)
+				);
+
+				visited[startY][startX] = true;
+
+				while (queue.length > 0) {
+					const { x, y, path } = queue.shift();
+
+					if (x === endX && y === endY) {
+						return path;
+					}
+
+					const neighbors = [
+						{ x: x + 1, y },
+						{ x: x - 1, y },
+						{ x, y: y + 1 },
+						{ x, y: y - 1 },
+					];
+
+					for (const neighbor of neighbors) {
+						const nx = neighbor.x;
+						const ny = neighbor.y;
+
+						if (
+							nx >= 0 &&
+							nx < wallGrid[0].length &&
+							ny >= 0 &&
+							ny < wallGrid.length &&
+							!wallGrid[ny][nx] &&
+							!visited[ny][nx]
+						) {
+							visited[ny][nx] = true;
+							queue.push({
+								x: nx,
+								y: ny,
+								path: path.concat({ x: nx, y: ny }),
+							});
+						}
+					}
+				}
+
+				return null; // No path found
+			}
+
+			function isPathToExit(startX, startY, exitX, exitY) {
+				const queue = [{ x: startX, y: startY }];
+				const visited = Array.from({ length: wallGrid.length }, () =>
+					Array(wallGrid[0].length).fill(false)
+				);
+
+				visited[startY][startX] = true;
+
+				while (queue.length > 0) {
+					const { x, y } = queue.shift();
+
+					// Check if we've reached the exit
+					if (x === exitX && y === exitY) {
+						return true;
+					}
+
+					// Possible movements (up, down, left, right)
+					const neighbors = [
+						{ x: x + 1, y },
+						{ x: x - 1, y },
+						{ x, y: y + 1 },
+						{ x, y: y - 1 },
+					];
+
+					for (const neighbor of neighbors) {
+						if (
+							neighbor.x >= 0 &&
+							neighbor.x < wallGrid[0].length &&
+							neighbor.y >= 0 &&
+							neighbor.y < wallGrid.length &&
+							!wallGrid[neighbor.y][neighbor.x] &&
+							!visited[neighbor.y][neighbor.x]
+						) {
+							visited[neighbor.y][neighbor.x] = true;
+							queue.push(neighbor);
+						}
+					}
+				}
+
+				return false; // No path found
+			}
+
+			function generateMaze() {
+				const cols = wallGrid[0].length;
+				const rows = wallGrid.length;
+				let pathExists = false;
+
+				while (!pathExists) {
+					// Reset rooms
+					rooms.length = 0;
+					for (let y = 0; y < rows; y++) {
+						for (let x = 0; x < cols; x++) {
+							wallGrid[y][x] = true; // Reset walls
+							doorGrid[y][x] = false; // Reset doors
+						}
+					}
+					// Determine room generation parameters
+					let maxRooms, minRoomSize, maxRoomSize;
+					if (gameMode === "regular") {
+						maxRooms = 100; // Adjust as needed
+						minRoomSize = 4;
+						maxRoomSize = 25;
+					} else if (gameMode === "custom") {
+						maxRooms = customSettings.numRooms;
+						minRoomSize = customSettings.minRoomSize;
+						maxRoomSize = customSettings.maxRoomSize;
+					}
+
+					for (let i = 0; i < maxRooms; i++) {
+						// Random room size
+						const roomWidth = Math.floor(
+							randomInRange(minRoomSize, maxRoomSize)
+						);
+						const roomHeight = Math.floor(
+							randomInRange(minRoomSize, maxRoomSize)
+						);
+
+						// Random position within bounds
+						const roomX = Math.floor(randomInRange(1, cols - roomWidth - 1));
+						const roomY = Math.floor(randomInRange(1, rows - roomHeight - 1));
+
+						const newRoom = {
+							x: roomX,
+							y: roomY,
+							width: roomWidth,
+							height: roomHeight,
+						};
+
+						// Check for overlap with existing rooms
+						let overlapping = false;
+						for (let j = 0; j < rooms.length; j++) {
+							const room = rooms[j];
+							if (roomsOverlap(newRoom, room)) {
+								overlapping = true;
+								break;
+							}
+						}
+
+						if (!overlapping) {
+							carveRoom(newRoom);
+							rooms.push(newRoom);
+
+							let lightSpawnChance =
+								gameMode === "regular" ? 0.1 : customSettings.lightSpawnChance;
+							// Randomly place light sources and doors
+							if (Math.random() < lightSpawnChance) placeLightInRoom(newRoom);
+							placeRandomBlocksInRoom(newRoom, 7); // Adjust block count as desired
+
+							// After placing light sources and random blocks in a room
+							if (Math.random() < 0.1) placeLightInRoom(newRoom);
+							placeRandomBlocksInRoom(newRoom, 7); // Adjust block count as desired
+							placePickupInRoom(newRoom); // Attempt to place a pickup
+						}
+					}
+
+					connectRooms(rooms);
+
+					// Place the player in the first room
+					const firstRoom = rooms[0];
+					player.x = Math.floor(firstRoom.x + firstRoom.width / 2);
+					player.y = Math.floor(firstRoom.y + firstRoom.height / 2);
+
+					// Place the exit in the last room
+					const lastRoom = rooms[rooms.length - 1];
+					exit.x = Math.floor(lastRoom.x + lastRoom.width / 2);
+					exit.y = Math.floor(lastRoom.y + lastRoom.height / 2);
+
+					// Check if path exists between player and exit
+					pathExists = isPathToExit(player.x, player.y, exit.x, exit.y);
+
+					if (!pathExists) {
+						console.log("No path found, regenerating maze...");
+					}
+				}
+			}
+			// Function to place a pickup in a room with a given spawn chance
+			function placePickupInRoom(room, spawnChance = pickupSpawnChance) {
+				if (Math.random() < spawnChance) {
+					let pickupX, pickupY;
+					let attempts = 20; // Limit attempts to prevent infinite loops
+
+					// Try finding an open tile within the room
+					do {
+						pickupX = Math.floor(
+							randomInRange(room.x + 1, room.x + room.width - 2)
+						);
+						pickupY = Math.floor(
+							randomInRange(room.y + 1, room.y + room.height - 2)
+						);
+						attempts--;
+					} while (
+						(wallGrid[pickupY][pickupX] || doorGrid[pickupY][pickupX]) &&
+						attempts > 0
+					);
+
+					if (!wallGrid[pickupY][pickupX] && !doorGrid[pickupY][pickupX]) {
+						pickups.push({ x: pickupX, y: pickupY, type: "regular" });
+					}
+				}
+			}
+
+			function isPickupOccupied(x, y) {
+				return pickups.some((pickup) => pickup.x === x && pickup.y === y);
+			}
+			function isPickupIlluminated(pickup) {
+				// Calculate vector from player to pickup
+				const dx = pickup.x + 0.5 - player.x;
+				const dy = pickup.y + 0.5 - player.y;
+				const distance = Math.sqrt(dx * dx + dy * dy);
+				if (distance > beamLength) {
+					return false;
+				}
+				// Calculate angle between player's flashlight and the vector to the pickup
+				const angleToPickup = Math.atan2(dy, dx);
+				let angleDifference = Math.abs(angleToPickup - player.flashlightAngle);
+
+				// Normalize angle difference to [0, PI]
+				angleDifference =
+					angleDifference > Math.PI
+						? 2 * Math.PI - angleDifference
+						: angleDifference;
+
+				const halfBeamSpread = (beamSpread / 2) * (Math.PI / 180); // Convert degrees to radians
+
+				// Check if within beam spread
+				if (angleDifference > halfBeamSpread) {
+					return false;
+				}
+
+				// Check line of sight
+				return hasLineOfSight(player.x, player.y, pickup.x, pickup.y);
+			}
+			function hasLineOfSight(x1, y1, x2, y2) {
+				const dx = Math.abs(x2 - x1);
+				const dy = Math.abs(y2 - y1);
+				const sx = x1 < x2 ? 1 : -1;
+				const sy = y1 < y2 ? 1 : -1;
+				let err = dx - dy;
+
+				let currentX = x1;
+				let currentY = y1;
+
+				while (currentX !== x2 || currentY !== y2) {
+					if (wallGrid[currentY][currentX]) {
+						return false; // Wall blocks the line of sight
+					}
+
+					const e2 = 2 * err;
+					if (e2 > -dy) {
+						err -= dy;
+						currentX += sx;
+					}
+					if (e2 < dx) {
+						err += dx;
+						currentY += sy;
+					}
+				}
+
+				return true;
+			}
+
+			function placeLightInRoom(room) {
+				let lightX, lightY;
+				let attempts = 20; // Limit attempts to prevent infinite loops
+
+				// Try finding an open tile within the room
+				do {
+					lightX = Math.floor(
+						randomInRange(room.x + 1, room.x + room.width - 2)
+					);
+					lightY = Math.floor(
+						randomInRange(room.y + 1, room.y + room.height - 2)
+					);
+					attempts--;
+				} while (wallGrid[lightY][lightX] && attempts > 0); // Retry if it's a wall
+
+				if (!wallGrid[lightY][lightX]) {
+					// Generate random color
+					const color = {
+						r: Math.floor(randomInRange(100, 255)),
+						g: Math.floor(randomInRange(100, 255)),
+						b: Math.floor(randomInRange(100, 255)),
+					};
+					lightSourceGrid[lightY][lightX] = true;
+					lightSources.push({ x: lightX, y: lightY, decay: 0.55, color });
+				}
+			}
+
+			function placeRandomBlocksInRoom(room, blockCount = 3) {
+				let attempts = blockCount * 5; // Allow a few retries for placement
+
+				const exclusionRadius = 1; // Radius around doors to avoid placing blocks
+
+				// Identify door cells in the room for exclusion
+				let exclusionZones = [];
+				for (let y = room.y; y < room.y + room.height; y++) {
+					for (let x = room.x; x < room.x + room.width; x++) {
+						if (doorGrid[y][x]) {
+							// Mark all cells around the door within the exclusion radius
+							for (let dy = -exclusionRadius; dy <= exclusionRadius; dy++) {
+								for (let dx = -exclusionRadius; dx <= exclusionRadius; dx++) {
+									const exX = x + dx;
+									const exY = y + dy;
+									if (
+										exX >= room.x &&
+										exX < room.x + room.width &&
+										exY >= room.y &&
+										exY < room.y + room.height
+									) {
+										exclusionZones.push({ x: exX, y: exY });
+									}
+								}
+							}
+						}
+					}
+				}
+
+				// Function to check if a cell is in the exclusion zone
+				function isInExclusionZone(x, y) {
+					return exclusionZones.some((zone) => zone.x === x && zone.y === y);
+				}
+
+				// Place blocks randomly in open cells not in exclusion zones
+				while (blockCount > 0 && attempts > 0) {
+					const blockX = Math.floor(
+						randomInRange(room.x + 1, room.x + room.width - 2)
+					);
+					const blockY = Math.floor(
+						randomInRange(room.y + 1, room.y + room.height - 2)
+					);
+
+					// Check it's an open space and not in the exclusion zone
+					if (!wallGrid[blockY][blockX] && !isInExclusionZone(blockX, blockY)) {
+						wallGrid[blockY][blockX] = true; // Add block
+						blockCount--;
+					}
+
+					attempts--; // Reduce attempts to avoid infinite loops
+				}
+			}
+
+			function placeDoorsInRoom(room) {
+				// Determine which walls to place doors on
+				const walls = ["top", "bottom", "left", "right"];
+				const doorCount = Math.floor(randomInRange(1, 3)); // 1 or 2 doors
+
+				for (let i = 0; i < doorCount; i++) {
+					if (walls.length === 0) break; // No walls left
+					const wallIndex = Math.floor(Math.random() * walls.length);
+					const wall = walls.splice(wallIndex, 1)[0];
+					let doorX, doorY;
+
+					if (wall === "top" && room.y > 1) {
+						doorX = Math.floor(
+							randomInRange(room.x + 1, room.x + room.width - 2)
+						);
+						doorY = room.y;
+					} else if (
+						wall === "bottom" &&
+						room.y + room.height < wallGrid.length - 1
+					) {
+						doorX = Math.floor(
+							randomInRange(room.x + 1, room.x + room.width - 2)
+						);
+						doorY = room.y + room.height - 1;
+					} else if (wall === "left" && room.x > 1) {
+						doorX = room.x;
+						doorY = Math.floor(
+							randomInRange(room.y + 1, room.y + room.height - 2)
+						);
+					} else if (
+						wall === "right" &&
+						room.x + room.width < wallGrid[0].length - 1
+					) {
+						doorX = room.x + room.width - 1;
+						doorY = Math.floor(
+							randomInRange(room.y + 1, room.y + room.height - 2)
+						);
+					} else {
+						continue;
+					}
+
+					// Place a door
+					wallGrid[doorY][doorX] = false; // Remove wall
+					doorGrid[doorY][doorX] = true; // Add door
+				}
+			}
+
+			function roomsOverlap(roomA, roomB) {
+				return (
+					roomA.x < roomB.x + roomB.width &&
+					roomA.x + roomA.width > roomB.x &&
+					roomA.y < roomB.y + roomB.height &&
+					roomA.y + roomA.height > roomB.y
+				);
+			}
+
+			function carveRoom(room) {
+				for (let y = room.y; y < room.y + room.height; y++) {
+					for (let x = room.x; x < room.x + room.width; x++) {
+						wallGrid[y][x] = false;
+					}
+				}
+			}
+
+			function connectRooms(rooms) {
+				const connectedRooms = [];
+				connectedRooms.push(rooms[0]); // Start with the first room (player's starting room)
+
+				const unconnectedRooms = rooms.slice(1); // All other rooms
+
+				while (unconnectedRooms.length > 0) {
+					// Choose a random room from the connected rooms
+					const roomA =
+						connectedRooms[Math.floor(Math.random() * connectedRooms.length)];
+
+					// Choose a random room from the unconnected rooms
+					const roomBIndex = Math.floor(
+						Math.random() * unconnectedRooms.length
+					);
+					const roomB = unconnectedRooms[roomBIndex];
+
+					// Get closest points on the edges of both rooms
+					const pointA = getClosestPointOnRoomEdge(roomA, roomB);
+					const pointB = getClosestPointOnRoomEdge(roomB, roomA);
+
+					// Carve a corridor between these points
+					const corridorPoints = carveCorridor(pointA, pointB);
+
+					// Optionally place doors in the corridor
+					if (Math.random() < 0.5) {
+						placeDoorsInCorridor(corridorPoints);
+					}
+
+					// Move roomB from unconnectedRooms to connectedRooms
+					connectedRooms.push(roomB);
+					unconnectedRooms.splice(roomBIndex, 1);
+				}
+			}
+
+			function getClosestPointOnRoomEdge(room, targetRoom) {
+				// Calculate center points
+				const roomCenterX = room.x + room.width / 2;
+				const roomCenterY = room.y + room.height / 2;
+				const targetCenterX = targetRoom.x + targetRoom.width / 2;
+				const targetCenterY = targetRoom.y + targetRoom.height / 2;
+
+				// Determine the direction towards the target room
+				const dx = targetCenterX - roomCenterX;
+				const dy = targetCenterY - roomCenterY;
+
+				// Choose the edge closest to the target room
+				if (Math.abs(dx) > Math.abs(dy)) {
+					// Target is to the left or right
+					if (dx > 0) {
+						// Target is to the right
+						return {
+							x: room.x + room.width,
+							y: Math.floor(roomCenterY),
+						};
+					} else {
+						// Target is to the left
+						return {
+							x: room.x - 1,
+							y: Math.floor(roomCenterY),
+						};
+					}
+				} else {
+					// Target is above or below
+					if (dy > 0) {
+						// Target is below
+						return {
+							x: Math.floor(roomCenterX),
+							y: room.y + room.height,
+						};
+					} else {
+						// Target is above
+						return {
+							x: Math.floor(roomCenterX),
+							y: room.y - 1,
+						};
+					}
+				}
+			}
+
+			function carveCorridor(pointA, pointB) {
+				let x = pointA.x;
+				let y = pointA.y;
+
+				const deltaX = pointB.x - pointA.x;
+				const deltaY = pointB.y - pointA.y;
+
+				const stepX = deltaX < 0 ? -1 : 1;
+				const stepY = deltaY < 0 ? -1 : 1;
+
+				const corridorPoints = [];
+
+				// Randomly choose to go horizontal or vertical first
+				if (Math.random() < 0.5) {
+					while (x !== pointB.x) {
+						if (withinBounds(x, y)) {
+							wallGrid[y][x] = false;
+							corridorPoints.push({ x, y });
+						}
+						x += stepX;
+					}
+					while (y !== pointB.y) {
+						if (withinBounds(x, y)) {
+							wallGrid[y][x] = false;
+							corridorPoints.push({ x, y });
+						}
+						y += stepY;
+					}
+				} else {
+					while (y !== pointB.y) {
+						if (withinBounds(x, y)) {
+							wallGrid[y][x] = false;
+							corridorPoints.push({ x, y });
+						}
+						y += stepY;
+					}
+					while (x !== pointB.x) {
+						if (withinBounds(x, y)) {
+							wallGrid[y][x] = false;
+							corridorPoints.push({ x, y });
+						}
+						x += stepX;
+					}
+				}
+
+				return corridorPoints;
+			}
+
+			function placeDoorsInCorridor(corridorPoints) {
+				// Ensure the door placement is within the corridor bounds
+				if (corridorPoints.length < 3) return; // Skip very short corridors
+
+				// Randomly select a point in the middle of the corridor to place the door
+				const doorIndex = Math.floor(
+					randomInRange(1, corridorPoints.length - 1)
+				);
+				const doorPoint = corridorPoints[doorIndex];
+
+				// Place the door if it's within bounds
+				if (withinBounds(doorPoint.x, doorPoint.y)) {
+					wallGrid[doorPoint.y][doorPoint.x] = false; // Remove wall (if present)
+					doorGrid[doorPoint.y][doorPoint.x] = true; // Place door
+				}
+			}
+
+			function withinBounds(x, y) {
+				return (
+					x >= 0 && x < wallGrid[0].length && y >= 0 && y < wallGrid.length
+				);
+			}
+
+			function randomInRange(min, max) {
+				return min + Math.random() * (max - min);
+			}
+			/**
+			 * Performs bilinear interpolation on the radiance grid.
+			 * @param {Array} grid - The radiance grid to interpolate.
+			 * @param {number} x - The x-coordinate in grid space (can be fractional).
+			 * @param {number} y - The y-coordinate in grid space (can be fractional).
+			 * @returns {Object} - An object containing interpolated intensity and color.
+			 */
+			function bilinearInterpolate(grid, x, y) {
+				const x0 = Math.floor(x);
+				const y0 = Math.floor(y);
+				const x1 = x0 + 1;
+				const y1 = y0 + 1;
+
+				const tx = x - x0;
+				const ty = y - y0;
+
+				// Clamp indices to grid boundaries
+				const clamp = (val, min, max) => Math.max(min, Math.min(max, val));
+
+				const getCell = (gx, gy) => {
+					const clampedX = clamp(gx, 0, grid[0].length - 1);
+					const clampedY = clamp(gy, 0, grid.length - 1);
+					return grid[clampedY][clampedX];
+				};
+
+				const c00 = getCell(x0, y0);
+				const c10 = getCell(x1, y0);
+				const c01 = getCell(x0, y1);
+				const c11 = getCell(x1, y1);
+
+				// Interpolate intensity
+				const intensity =
+					c00.intensity * (1 - tx) * (1 - ty) +
+					c10.intensity * tx * (1 - ty) +
+					c01.intensity * (1 - tx) * ty +
+					c11.intensity * tx * ty;
+
+				// Interpolate color channels
+				const r =
+					c00.color.r * (1 - tx) * (1 - ty) +
+					c10.color.r * tx * (1 - ty) +
+					c01.color.r * (1 - tx) * ty +
+					c11.color.r * tx * ty;
+
+				const g =
+					c00.color.g * (1 - tx) * (1 - ty) +
+					c10.color.g * tx * (1 - ty) +
+					c01.color.g * (1 - tx) * ty +
+					c11.color.g * tx * ty;
+
+				const b =
+					c00.color.b * (1 - tx) * (1 - ty) +
+					c10.color.b * tx * (1 - ty) +
+					c01.color.b * (1 - tx) * ty +
+					c11.color.b * tx * ty;
+
+				return {
+					intensity,
+					color: { r, g, b },
+				};
+			}
+			function getVisibleBounds() {
+				const visibleCols = Math.ceil(canvas.width / (resolution * scale));
+				const visibleRows = Math.ceil(canvas.height / (resolution * scale));
+				const cameraX = Math.max(0, player.x - Math.floor(visibleCols / 2));
+				const cameraY = Math.max(0, player.y - Math.floor(visibleRows / 2));
+				return { cameraX, cameraY, visibleCols, visibleRows };
+			}
+			function getVisibleBoundsBuffer(buffer = visibleBoundsBuffer) {
+				const visibleCols = Math.ceil(canvas.width / (resolution * scale));
+				const visibleRows = Math.ceil(canvas.height / (resolution * scale));
+				const startX = Math.max(0, cameraX - buffer);
+				const startY = Math.max(0, cameraY - buffer);
+				const endX = Math.min(
+					wallGrid[0].length,
+					cameraX + visibleCols + buffer
+				);
+				const endY = Math.min(wallGrid.length, cameraY + visibleRows + buffer);
+				return { startX, startY, endX, endY };
+			}
+
+			function draw() {
+				const cols = wallGrid[0].length;
+				const rows = wallGrid.length;
+
+				const maxVisibleCols = Math.ceil(canvas.width / (resolution * scale));
+				const maxVisibleRows = Math.ceil(canvas.height / (resolution * scale));
+
+				// Center the camera on the player
+				cameraX = player.x - Math.floor(maxVisibleCols / 2);
+				cameraY = player.y - Math.floor(maxVisibleRows / 2);
+
+				// Clamp camera position to map boundaries
+				cameraX = Math.max(0, Math.min(cameraX, cols - maxVisibleCols));
+				cameraY = Math.max(0, Math.min(cameraY, rows - maxVisibleRows));
+
+				ctx.clearRect(0, 0, canvas.width, canvas.height);
+				ctx.save();
+				ctx.scale(scale, scale);
+
+				const visibleCols = Math.min(maxVisibleCols, cols - cameraX);
+				const visibleRows = Math.min(maxVisibleRows, rows - cameraY);
+
+				for (let y = 0; y < visibleRows; y++) {
+					for (let x = 0; x < visibleCols; x++) {
+						const mapX = x + cameraX;
+						const mapY = y + cameraY;
+
+						let combinedIntensity = 0;
+						let combinedColor = { r: 0, g: 0, b: 0 };
+						cascades.forEach((cascade, index) => {
+							const factor = cascade.resolutionFactor;
+							if (useBilinearInterpolation) {
+								// Calculate floating point grid coordinates
+								const gx = mapX / factor;
+								const gy = mapY / factor;
+
+								// Perform bilinear interpolation
+								const interpolated = bilinearInterpolate(cascade.grid, gx, gy);
+
+								const layerOpacity = 1 - index * 0.3; // Adjust as needed
+
+								combinedIntensity += interpolated.intensity * layerOpacity;
+								combinedColor.r +=
+									interpolated.color.r * interpolated.intensity * layerOpacity;
+								combinedColor.g +=
+									interpolated.color.g * interpolated.intensity * layerOpacity;
+								combinedColor.b +=
+									interpolated.color.b * interpolated.intensity * layerOpacity;
+							} else {
+								// Use nearest grid cell without interpolation
+								const gx = Math.floor(mapX / factor);
+								const gy = Math.floor(mapY / factor);
+
+								if (
+									gx >= 0 &&
+									gx < cascade.grid[0].length &&
+									gy >= 0 &&
+									gy < cascade.grid.length
+								) {
+									const cell = cascade.grid[gy][gx];
+									const layerOpacity = 1 - index * 0.3; // Adjust as needed
+
+									combinedIntensity += cell.intensity * layerOpacity;
+									combinedColor.r +=
+										cell.color.r * cell.intensity * layerOpacity;
+									combinedColor.g +=
+										cell.color.g * cell.intensity * layerOpacity;
+									combinedColor.b +=
+										cell.color.b * cell.intensity * layerOpacity;
+								}
+							}
+						});
+
+						// Normalize color
+						if (combinedIntensity > 0) {
+							combinedColor.r /= combinedIntensity;
+							combinedColor.g /= combinedIntensity;
+							combinedColor.b /= combinedIntensity;
+						}
+
+						// Apply gamma correction
+						//const gamma = 0.5;
+						const intensity = Math.pow(Math.min(1, combinedIntensity), gamma);
+
+						// Final color
+						const r = Math.floor(combinedColor.r * intensity);
+						const g = Math.floor(combinedColor.g * intensity);
+						const b = Math.floor(combinedColor.b * intensity);
+
+						// Handle walls and doors
+						if (wallGrid[mapY][mapX]) {
+							// Walls
+							ctx.fillStyle = `rgb(${r * 0.3}, ${g * 0.3}, ${b * 0.3})`;
+						} else if (doorGrid[mapY][mapX]) {
+							// Doors
+							ctx.fillStyle = `rgb(${r * 0.6}, ${g * 0.4}, ${b * 0.2})`;
+						} else {
+							// Open space
+							ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
+						}
+
+						ctx.fillRect(
+							x * resolution,
+							y * resolution,
+							resolution,
+							resolution
+						);
+					}
+				}
+
+				// Draw light sources
+				for (const source of lightSources) {
+					const x = source.x - cameraX;
+					const y = source.y - cameraY;
+
+					if (x >= 0 && x < visibleCols && y >= 0 && y < visibleRows) {
+						const { r, g, b } = source.color;
+						ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
+						ctx.beginPath();
+						ctx.arc(
+							x * resolution + resolution / 2,
+							y * resolution + resolution / 2,
+							resolution / 4,
+							0,
+							Math.PI * 2
+						);
+						ctx.fill();
+					}
+				}
+
+				// Draw exit if within viewport
+				if (
+					exit.x >= cameraX &&
+					exit.x < cameraX + visibleCols &&
+					exit.y >= cameraY &&
+					exit.y < cameraY + visibleRows
+				) {
+					const gx = Math.floor(exit.x / cascades[0].resolutionFactor);
+					const gy = Math.floor(exit.y / cascades[0].resolutionFactor);
+					const exitCell = cascades[0].grid[gy][gx];
+					const intensity = Math.floor(Math.pow(exitCell.intensity, 0.5) * 255);
+					ctx.fillStyle = `rgb(${intensity * 0.3}, ${intensity}, ${
+						intensity * 0.2
+					})`; // Green exit
+					ctx.fillRect(
+						(exit.x - cameraX) * resolution,
+						(exit.y - cameraY) * resolution,
+						resolution,
+						resolution
+					);
+				}
+
+				// Draw player
+				drawPlayer(
+					ctx,
+					(player.x - cameraX) * resolution,
+					(player.y - cameraY) * resolution,
+					resolution,
+					player.direction
+				);
+
+				// Draw enemies
+				drawEnemies();
+
+				drawPickup();
+				// Draw laser projectiles and their trails
+				if (projectile) {
+					drawProjectile(projectile);
+				}
+
+				ctx.restore();
+			}
+
+			function drawPickup() {
+				// Draw pickups based on radiance grid intensity
+				for (const pickup of pickups) {
+					const gx = Math.floor(pickup.x / cascades[0].resolutionFactor);
+					const gy = Math.floor(pickup.y / cascades[0].resolutionFactor);
+
+					if (
+						gy >= 0 &&
+						gy < cascades[0].grid.length &&
+						gx >= 0 &&
+						gx < cascades[0].grid[0].length
+					) {
+						const cell = cascades[0].grid[gy][gx];
+						const radianceIntensity = cell.intensity;
+						const radianceColor = cell.color;
+
+						// Define a threshold to determine visibility
+						const visibilityThreshold = 0.3; // Adjust based on desired sensitivity
+
+						if (radianceIntensity > visibilityThreshold) {
+							// Scale the glow's opacity based on radianceIntensity
+							const glowOpacity = radianceIntensity; // Clamp to 1
+							// Set glow color based on pickup type
+							let pickupColor;
+							if (pickup.type === "regular") {
+								pickupColor = `rgba(150, 0, 150, ${glowOpacity})`; // Purple for regular pickups
+							} else if (pickup.type === "dropped") {
+								pickupColor = `rgba(0, 150, 150, ${glowOpacity})`; // Cyan for dropped pickups
+							} else {
+								pickupColor = `rgba(150, 0, 150, ${glowOpacity})`; // Default color
+							}
+
+							ctx.fillStyle = pickupColor;
+							ctx.beginPath();
+							ctx.arc(
+								(pickup.x - cameraX) * resolution + resolution / 2,
+								(pickup.y - cameraY) * resolution + resolution / 2,
+								resolution / 2,
+								0,
+								Math.PI * 2
+							);
+							ctx.fill();
+
+							// Add a bright outline or halo based on glowOpacity
+							ctx.strokeStyle = `rgba(255, 255, 255, ${glowOpacity})`;
+							ctx.lineWidth = 1;
+							ctx.beginPath();
+							ctx.arc(
+								(pickup.x - cameraX) * resolution + resolution / 2,
+								(pickup.y - cameraY) * resolution + resolution / 2,
+								resolution / 2 + 2,
+								0,
+								Math.PI * 2
+							);
+							ctx.stroke();
+						}
+					}
+				}
+			}
+
+			function drawPlayer(ctx, x, y, size, direction, color = "blue") {
+				const halfSize = size / 2;
+				const centerX = x + halfSize;
+				const centerY = y + halfSize;
+
+				ctx.fillStyle = color;
+				ctx.beginPath();
+				if (direction === "up") {
+					ctx.moveTo(centerX, centerY - halfSize);
+					ctx.lineTo(centerX - halfSize, centerY + halfSize);
+					ctx.lineTo(centerX + halfSize, centerY + halfSize);
+				} else if (direction === "down") {
+					ctx.moveTo(centerX, centerY + halfSize);
+					ctx.lineTo(centerX - halfSize, centerY - halfSize);
+					ctx.lineTo(centerX + halfSize, centerY - halfSize);
+				} else if (direction === "left") {
+					ctx.moveTo(centerX - halfSize, centerY);
+					ctx.lineTo(centerX + halfSize, centerY - halfSize);
+					ctx.lineTo(centerX + halfSize, centerY + halfSize);
+				} else if (direction === "right") {
+					ctx.moveTo(centerX + halfSize, centerY);
+					ctx.lineTo(centerX - halfSize, centerY - halfSize);
+					ctx.lineTo(centerX - halfSize, centerY + halfSize);
+				}
+				ctx.closePath();
+				ctx.fill();
+			}
+
+			function drawEnemies() {
+				for (const enemy of enemies) {
+					const enemyX = enemy.x - cameraX;
+					const enemyY = enemy.y - cameraY;
+
+					if (
+						enemyX >= 0 &&
+						enemyX < canvas.width / resolution &&
+						enemyY >= 0 &&
+						enemyY < canvas.height / resolution
+					) {
+						if (enemy.type === "boss") {
+							// Check the radiance intensity at the boss's position
+							const gx = Math.floor(enemy.x / cascades[0].resolutionFactor);
+							const gy = Math.floor(enemy.y / cascades[0].resolutionFactor);
+
+							if (
+								gy >= 0 &&
+								gy < cascades[0].grid.length &&
+								gx >= 0 &&
+								gx < cascades[0].grid[0].length
+							) {
+								const cell = cascades[0].grid[gy][gx];
+								const radianceIntensity = cell.intensity;
+
+								// Pass the radianceIntensity to drawBossEnemy()
+								drawBossEnemy(
+									ctx,
+									enemyX * resolution,
+									enemyY * resolution,
+									resolution,
+									enemy.direction,
+									radianceIntensity
+								);
+							}
+						} else {
+							// Normal enemy, draw as usual
+							drawPlayer(
+								ctx,
+								enemyX * resolution,
+								enemyY * resolution,
+								resolution,
+								enemy.direction,
+								"red" // color for enemy
+							);
+						}
+					}
+				}
+			}
+
+			function drawBossEnemy(ctx, x, y, size, direction, radianceIntensity) {
+				const halfSize = size / 2;
+				const centerX = x + halfSize;
+				const centerY = y + halfSize;
+
+				// Ensure radianceIntensity is clamped between 0 and 1
+				const intensity = Math.max(0, Math.min(2, radianceIntensity));
+
+				// Map intensity to red color value between 50 and 255 (adjust as needed)
+				const minRedValue = 0; // Minimum red component (dark red)
+				const maxRedValue = 255; // Maximum red component (bright red)
+				const redValue = Math.floor(
+					minRedValue + intensity * (maxRedValue - minRedValue)
+				);
+
+				// Create the color string with the computed red value
+				const color = `rgb(${redValue}, 0, 0)`;
+
+				ctx.fillStyle = color;
+				ctx.beginPath();
+				if (direction === "up") {
+					ctx.moveTo(centerX, centerY - halfSize);
+					ctx.lineTo(centerX - halfSize, centerY + halfSize);
+					ctx.lineTo(centerX + halfSize, centerY + halfSize);
+				} else if (direction === "down") {
+					ctx.moveTo(centerX, centerY + halfSize);
+					ctx.lineTo(centerX - halfSize, centerY - halfSize);
+					ctx.lineTo(centerX + halfSize, centerY - halfSize);
+				} else if (direction === "left") {
+					ctx.moveTo(centerX - halfSize, centerY);
+					ctx.lineTo(centerX + halfSize, centerY - halfSize);
+					ctx.lineTo(centerX + halfSize, centerY + halfSize);
+				} else if (direction === "right") {
+					ctx.moveTo(centerX + halfSize, centerY);
+					ctx.lineTo(centerX - halfSize, centerY - halfSize);
+					ctx.lineTo(centerX - halfSize, centerY + halfSize);
+				}
+				ctx.closePath();
+				ctx.fill();
+			}
+
+			function movePlayer(newX, newY, direction) {
+				const cols = wallGrid[0].length;
+				const rows = wallGrid.length;
+
+				if (newX >= 0 && newX < cols && newY >= 0 && newY < rows) {
+					if (!wallGrid[newY][newX] || doorGrid[newY][newX]) {
+						// Open space or door
+						player.x = newX;
+						player.y = newY;
+						player.direction = direction || player.direction;
+
+						moveEnemies();
+						checkPlayerCollision(); // Check collision after moving enemies
+
+						// Check for win condition
+						if (player.x === exit.x && player.y === exit.y) {
+							gameWon = true;
+
+							endLevel.volume = sfxVolume / 100;
+							endLevel.play();
+
+							// Display the level completion modal
+							levelCompleteModal.style.display = "flex";
+							updateShopUI(); // Update the shop UI with current values
+						}
+
+						// **Check for Pickup Collection**
+						collectPickups();
+					}
+				}
+			}
+			proceedNextLevelButton.addEventListener("click", () => {
+				// Hide the level completion modal
+				levelCompleteModal.style.display = "none";
+
+				menuSelect.volume = sfxVolume / 100;
+				menuSelect.play();
+
+				// Proceed to the next level
+				level++;
+				localStorage.setItem("level", level);
+				updateLevelUI();
+
+				// Add score for level completion
+				score += 100;
+				localStorage.setItem("score", score);
+				updateScoreUI();
+				// Increment levels completed
+				levelsCompleted++;
+				localStorage.setItem("levelsCompleted", levelsCompleted);
+
+				// Reset per-level pickup counts
+				regularPickupCount = 0;
+				droppedPickupCount = 0; // If you still have dropped pickups
+				localStorage.setItem("regularPickupCount", regularPickupCount);
+				localStorage.setItem("droppedPickupCount", droppedPickupCount);
+				localStorage.setItem(
+					"flashlightUpgrades",
+					JSON.stringify(flashlightUpgrades)
+				);
+
+				updatePickupCountsUI();
+
+				initializeGrids();
+				initializeEnemies();
+				propagateRadiance();
+				draw();
+
+				gameWon = false; // Reset the gameWon flag
+			});
+
+			function applyFlashlightUpgrades() {
+				// Base values
+				const baseBeamLength = 10;
+				const baseBeamSpread = 60; // in degrees
+				const baseBeamDecayFactor = 0.9;
+
+				// Increase per level
+				const beamLengthIncrement = 10; // Increase beam length per level
+				const beamSpreadIncrement = 15; // Increase beam spread per level
+				const beamDecayDecrement = -0.03; // Decrease beam decay per level (makes the beam last longer)
+
+				// Apply upgrades
+				beamLength =
+					baseBeamLength +
+					(flashlightUpgrades.beamLength - 1) * beamLengthIncrement;
+				beamSpread =
+					baseBeamSpread +
+					(flashlightUpgrades.beamSpread - 1) * beamSpreadIncrement;
+				beamDecayFactor =
+					baseBeamDecayFactor -
+					(flashlightUpgrades.beamDecay - 1) * beamDecayDecrement;
+
+				// Ensure beamDecayFactor doesn't go below a minimum value
+				if (beamDecayFactor < 0.5) {
+					beamDecayFactor = 0.5;
+				}
+			}
+
+			// Reset Button Event Listener
+			resetButton.addEventListener("click", () => {
+				if (confirm("Are you sure you want to reset your progress?")) {
+					level = 1;
+					// Reset pickup counts
+					regularPickupCount = 0;
+					droppedPickupCount = 0;
+					// Reset total pickup counts
+					totalRegularPickupCount = 0;
+					totalDroppedPickupCount = 0;
+					score = 0; // Reset score
+					levelsCompleted = 0; // Reset levels completed
+					// Reset flashlight upgrades
+					flashlightUpgrades = {
+						beamLength: 1,
+						beamSpread: 1,
+						beamDecay: 1,
+					};
+					applyFlashlightUpgrades();
+					localStorage.setItem("level", level);
+					localStorage.setItem("regularPickupCount", regularPickupCount);
+					localStorage.setItem("droppedPickupCount", droppedPickupCount);
+					localStorage.setItem(
+						"totalRegularPickupCount",
+						totalRegularPickupCount
+					);
+					localStorage.setItem(
+						"totalDroppedPickupCount",
+						totalDroppedPickupCount
+					);
+					localStorage.setItem("score", score);
+					localStorage.setItem("levelsCompleted", levelsCompleted);
+					localStorage.setItem(
+						"flashlightUpgrades",
+						JSON.stringify(flashlightUpgrades)
+					);
+
+					updateLevelUI();
+					updatePickupCountsUI();
+					updateScoreUI();
+
+					initializeGrids();
+					propagateRadiance();
+					draw();
+				}
+			});
+			function collectPickups() {
+				for (let i = pickups.length - 1; i >= 0; i--) {
+					const pickup = pickups[i];
+					if (player.x === pickup.x && player.y === pickup.y) {
+						// Handle pickup based on its type
+						if (pickup.type === "regular") {
+							// For regular pickups
+							pickupSoundOne.pause();
+							pickupSoundOne.currentTime = 0;
+							pickupSoundOne.volume = sfxVolume / 100;
+							pickupSoundOne.play();
+							pickups.splice(i, 1);
+							regularPickupCount++;
+							totalRegularPickupCount++;
+							score += 10; // Add 10 points
+							//console.log("Regular pickup collected!");
+							// Implement any effects or bonuses for regular pickups here
+						} else if (pickup.type === "dropped") {
+							// For pickups dropped by enemies
+							pickupSoundTwo.pause();
+							pickupSoundTwo.currentTime = 0;
+							pickupSoundTwo.volume = sfxVolume / 100;
+							pickupSoundTwo.play();
+
+							pickups.splice(i, 1);
+							droppedPickupCount++;
+							totalDroppedPickupCount++;
+							score += 25; // Add 25 points
+							//console.log("Dropped pickup collected!");
+							// Implement any effects or bonuses for dropped pickups here
+						}
+						// Save updated counts to localStorage
+						localStorage.setItem("regularPickupCount", regularPickupCount);
+						localStorage.setItem("droppedPickupCount", droppedPickupCount);
+						localStorage.setItem(
+							"totalRegularPickupCount",
+							totalRegularPickupCount
+						);
+						localStorage.setItem(
+							"totalDroppedPickupCount",
+							totalDroppedPickupCount
+						);
+						localStorage.setItem("score", score);
+						updatePickupCountsUI();
+						updateScoreUI();
+					}
+				}
+			}
+
+			// Function to add an explosion light source at (x, y)
+			function addExplosion(x, y) {
+				// Define explosion properties
+				const explosion = {
+					x: x,
+					y: y,
+					decay: 0.7, // Faster decay for a short-lived effect
+					color: { r: 255, g: 165, b: 0 }, // Orange color for explosion
+					isExplosion: true, // Custom flag to identify explosion lights
+					intensity: 2, // Initial intensity of the explosion
+
+					timer: 10, // Duration of the explosion in frames
+				};
+
+				// Add the explosion to the lightSources array
+				lightSources.push(explosion);
+			}
+
+			function propagateRadiance() {
+				//let buffer = 32; // Adjust buffer as needed
+				const { startX, startY, endX, endY } = getVisibleBoundsBuffer();
+
+				const minGX = Math.floor(startX / cascades[0].resolutionFactor);
+				const minGY = Math.floor(startY / cascades[0].resolutionFactor);
+				const maxGX = Math.ceil(endX / cascades[0].resolutionFactor);
+				const maxGY = Math.ceil(endY / cascades[0].resolutionFactor);
+
+				// Clamp bounds to grid dimensions
+				const cols = cascades[0].grid[0].length;
+				const rows = cascades[0].grid.length;
+
+				const bounds = {
+					minGX: Math.max(0, minGX),
+					minGY: Math.max(0, minGY),
+					maxGX: Math.min(cols - 1, maxGX),
+					maxGY: Math.min(rows - 1, maxGY),
+				};
+
+				// Reset radiance grids for all cascades
+				for (const cascade of cascades) {
+					resetRadianceGrid(cascade.grid);
+				}
+
+				// Propagate light sources for each cascade
+				for (const cascade of cascades) {
+					const decay = cascade.decay * generalDecayFactor;
+
+					// Player flashlight
+					if (flashlightOn) {
+						propagateFlashlightBeam(
+							player.x,
+							player.y,
+							player.flashlightAngle,
+							beamSpread,
+							beamLength,
+							beamDecayFactor,
+							cascade.grid,
+							cascade.resolutionFactor
+						);
+					}
+
+					// Update exit's light source for pulsating effect
+					// Update exit's light source based on pickups collected
+					for (const source of lightSources) {
+						if (source.isExit) {
+							// Calculate total pickups collected in the current level
+							const totalPickupsCollected =
+								regularPickupCount + droppedPickupCount;
+
+							// Determine the exit light's intensity based on pickups collected
+							if (totalPickupsCollected < pickupsToStartExitLight) {
+								source.intensity = 0; // No light emitted
+							} else if (
+								totalPickupsCollected >= pickupsToStartExitLight &&
+								totalPickupsCollected <= pickupsForFullExitLight
+							) {
+								// Linearly interpolate intensity between 0 and 1
+								source.intensity =
+									(totalPickupsCollected - pickupsToStartExitLight) /
+									(pickupsForFullExitLight - pickupsToStartExitLight);
+							} else {
+								source.intensity = 1; // Full brightness after pickupsForFullExitLight pickups
+							}
+
+							// Modulate the green component using a sine wave for pulsating effect
+							source.color.g = 200 + 55 * Math.sin(time * 0.05); // Keep pulsating green
+						}
+						propagateLightSource(
+							source.x,
+							source.y,
+							source.decay,
+							cascade.grid,
+							cascade.resolutionFactor,
+							source.color,
+							source.intensity, // Pass current intensity
+							bounds
+						);
+					}
+
+					// Add glowing pickups as light sources if illuminated by flashlight
+					// Add glowing pickups as light sources if illuminated by flashlight
+					for (const pickup of pickups) {
+						if (isPickupIlluminated(pickup)) {
+							// Calculate distance from player to pickup
+							const dx = pickup.x + 0.5 - player.x;
+							const dy = pickup.y + 0.5 - player.y;
+							const distance = Math.sqrt(dx * dx + dy * dy);
+
+							// Calculate proximity factor (1 when at player, 0 at beamLength)
+							const proximityFactor = Math.max(
+								(beamLength - distance) / beamLength,
+								0
+							);
+
+							// Scale intensity based on proximity
+							const pickupIntensity =
+								minPickupIntensity +
+								(maxPickupIntensity - minPickupIntensity) * proximityFactor;
+
+							// Optionally adjust decay based on proximity
+							const pickupDecay =
+								0.3 + pickupDecayAdjustmentFactor * proximityFactor;
+							// Define pickup glow properties based on type
+							let pickupColor;
+							if (pickup.type === "regular") {
+								pickupColor = { r: 150, g: 0, b: 150 }; // Purple
+							} else if (pickup.type === "dropped") {
+								pickupColor = { r: 0, g: 150, b: 150 }; // Cyan
+							} else {
+								pickupColor = { r: 150, g: 0, b: 150 }; // Default to purple
+							}
+							// Add the pickup's glow to the radiance grid
+							propagateLightSource(
+								pickup.x,
+								pickup.y,
+								pickupDecay,
+								cascade.grid,
+								cascade.resolutionFactor,
+								pickupColor,
+								pickupIntensity,
+								bounds
+							);
+						}
+					}
+					const bossEnemy = enemies.find((enemy) => enemy.type === "boss");
+					if (bossEnemy) {
+						// Calculate distance from boss to player
+						const dx = bossEnemy.x - player.x;
+						const dy = bossEnemy.y - player.y;
+						const distance = Math.sqrt(dx * dx + dy * dy);
+
+						// Define proximity parameters
+						const maxGlowDistance = 10; // Distance at which the glow starts
+						const minGlowDistance = 2; // Distance at which the glow is at maximum intensity
+
+						// Calculate intensity based on distance
+						let bossIntensity = 0;
+						if (distance <= maxGlowDistance) {
+							bossIntensity = Math.max(
+								0,
+								(maxGlowDistance - distance) /
+									(maxGlowDistance - minGlowDistance)
+							);
+							bossIntensity = Math.min(bossIntensity, 2); // Clamp to [0, 1]
+						}
+
+						// Only add light source if intensity is above zero
+						if (bossIntensity > 0) {
+							propagateLightSource(
+								bossEnemy.x,
+								bossEnemy.y,
+								0.3, // Decay factor for the boss's glow
+								cascade.grid,
+								cascade.resolutionFactor,
+								{ r: 255, g: 0, b: 0 }, // Red color for the boss's glow
+								bossIntensity,
+								bounds
+							);
+						}
+					}
+
+					// Static light sources
+					// Already handled in the above loop
+
+					// Projectile light
+					if (projectile) {
+						propagateProjectileLight(projectile, cascade.grid, cascade);
+					}
+
+					// Propagate enemy flashlights
+					propagateEnemyFlashlights(cascade);
+				}
+
+				// Apply blending and blurring
+				for (let i = 0; i < cascades.length; i++) {
+					const cascade = cascades[i];
+					cascade.grid = blurRadianceGrid(
+						cascade.grid,
+						wallGrid,
+						cascade.resolutionFactor,
+						bounds
+					);
+				}
+				// Handle explosion timers and reduce their intensity
+				for (let i = lightSources.length - 1; i >= 0; i--) {
+					const source = lightSources[i];
+					if (source.isExplosion) {
+						source.intensity *= 0.9; // Reduce intensity gradually
+						source.timer -= 1; // Decrement timer
+
+						// Remove the explosion if intensity is too low or timer has expired
+						if (source.timer <= 0 || source.intensity < 0.1) {
+							lightSources.splice(i, 1);
+						}
+					}
+				}
+			}
+
+			function propagateFlashlightBeam(
+				startX,
+				startY,
+				angle,
+				spreadDegrees,
+				length,
+				decay,
+				grid,
+				resolutionFactor
+			) {
+				const spreadRad = spreadDegrees * (Math.PI / 180); // Convert to radians
+				const halfSpread = spreadRad / 2;
+				const numRays = Math.max(10, Math.floor(spreadDegrees / 5)); // More rays for smoother beam
+				const angleStep = spreadRad / (numRays - 1);
+
+				for (let i = 0; i < numRays; i++) {
+					const currentAngle = angle - halfSpread + i * angleStep;
+					propagateSingleRay(
+						startX,
+						startY,
+						currentAngle,
+						length,
+						decay,
+						grid,
+						resolutionFactor
+					);
+				}
+			}
+
+			function propagateSingleRay(
+				startX,
+				startY,
+				angle,
+				length,
+				decay,
+				grid,
+				resolutionFactor
+			) {
+				const maxDistance = length;
+				const stepSize = 0.2; // Smaller step for smoother rays
+				let beamIntensity = 1;
+				let distance = 0;
+
+				let x = startX + 0.5; // Center of the tile
+				let y = startY + 0.5;
+
+				while (beamIntensity > 0.01 && distance < maxDistance) {
+					x += Math.cos(angle) * stepSize;
+					y += Math.sin(angle) * stepSize;
+					distance += stepSize;
+					beamIntensity *= decay;
+
+					const mapX = Math.floor(x);
+					const mapY = Math.floor(y);
+
+					if (
+						mapX < 0 ||
+						mapX >= wallGrid[0].length ||
+						mapY < 0 ||
+						mapY >= wallGrid.length
+					) {
+						break; // Out of bounds
+					}
+
+					if (wallGrid[mapY][mapX]) {
+						break; // Light hits a wall
+					}
+
+					const gx = Math.floor(x / resolutionFactor);
+					const gy = Math.floor(y / resolutionFactor);
+
+					if (gx >= 0 && gx < grid[0].length && gy >= 0 && gy < grid.length) {
+						if (beamIntensity > grid[gy][gx].intensity) {
+							grid[gy][gx] = {
+								intensity: beamIntensity,
+								color: { r: 255, g: 255, b: 200 }, // Soft white/yellowish color
+							};
+						}
+					}
+				}
+			}
+
+			function propagateProjectileLight(projectile, grid, cascade) {
+				const { x, y, intensity } = projectile;
+				const px = Math.floor(x);
+				const py = Math.floor(y);
+
+				const factor = cascade.resolutionFactor;
+				const gx = Math.floor(px / factor);
+				const gy = Math.floor(py / factor);
+
+				if (
+					gy >= 0 &&
+					gy < grid.length &&
+					gx >= 0 &&
+					gx < grid[0].length &&
+					intensity > grid[gy][gx].intensity
+				) {
+					grid[gy][gx] = {
+						intensity: intensity,
+						color: { r: 255, g: 50, b: 50 }, // Red glow
+					};
+				}
+			}
+			// Function to check if any enemy is on the same tile as the player
+			function checkPlayerCollision() {
+				for (const enemy of enemies) {
+					if (enemy.x === player.x && enemy.y === player.y) {
+						// Collision detected
+
+						gameOver.volume = sfxVolume / 100;
+						gameOver.play();
+
+						triggerGameOver();
+						return; // Exit after triggering game over
+					}
+				}
+			}
+			// Function to handle game over scenario
+			function triggerGameOver() {
+				// Update high score if necessary
+				if (score > highScore) {
+					highScore = score;
+					localStorage.setItem("highScore", highScore);
+				}
+				score = 0;
+				updateScoreUI();
+				// Display the Game Over modal
+				const gameOverModal = document.getElementById("gameOverModal");
+				gameOverModal.style.display = "flex";
+				clearAllMovementIntervals();
+
+				// Pause the game loop by canceling the animation frame
+				// Note: Since requestAnimationFrame doesn't provide a cancel handle in this implementation,
+				// we'll handle game loop termination differently.
+				// Alternatively, you can implement a flag to pause the game loop.
+
+				// Optionally, you can stop further game logic here if needed
+			}
+			// Event listener for the Game Over Reset Button
+			document
+				.getElementById("gameOverResetButton")
+				.addEventListener("click", () => {
+					// Hide the Game Over modal
+					menuSelect.volume = sfxVolume / 100;
+					menuSelect.play();
+
+					const gameOverModal = document.getElementById("gameOverModal");
+					gameOverModal.style.display = "none";
+
+					// Reset the game to level 1
+					level = 1;
+					// Reset pickup counts
+					regularPickupCount = 0;
+					droppedPickupCount = 0;
+					// Reset total pickup counts
+					totalRegularPickupCount = 0;
+					totalDroppedPickupCount = 0;
+					score = 0; // Reset score
+					levelsCompleted = 0; // Reset levels completed
+					// Reset flashlight upgrades
+					flashlightUpgrades = {
+						beamLength: 1,
+						beamSpread: 1,
+						beamDecay: 1,
+					};
+					applyFlashlightUpgrades();
+					updatePickupCountsUI();
+					localStorage.setItem("level", level);
+					localStorage.setItem("regularPickupCount", regularPickupCount);
+					localStorage.setItem("droppedPickupCount", droppedPickupCount);
+					localStorage.setItem(
+						"totalRegularPickupCount",
+						totalRegularPickupCount
+					);
+					localStorage.setItem(
+						"totalDroppedPickupCount",
+						totalDroppedPickupCount
+					);
+					localStorage.setItem("score", score);
+					localStorage.setItem("levelsCompleted", levelsCompleted);
+					localStorage.setItem(
+						"flashlightUpgrades",
+						JSON.stringify(flashlightUpgrades)
+					);
+
+					updateLevelUI();
+					initializeGrids();
+					propagateRadiance();
+					draw();
+				});
+
+			// Initial UI Update
+			updateLevelUI();
+			updatePickupCountsUI();
+			function updateProjectile() {
+				if (projectile) {
+					// Move projectile
+					projectile.x += projectile.dx;
+					projectile.y += projectile.dy;
+					projectile.intensity *= projectile.decay;
+
+					// Check for collision with walls
+					const px = Math.floor(projectile.x);
+					const py = Math.floor(projectile.y);
+
+					if (
+						projectile.intensity < 0.1 ||
+						(wallGrid[py] && wallGrid[py][px])
+					) {
+						laserHit.pause();
+						laserHit.currentTime = 0;
+						laserHit.volume = sfxVolume / 100;
+						laserHit.play();
+
+						projectile = null;
+						return;
+					}
+
+					for (let i = enemies.length - 1; i >= 0; i--) {
+						const enemy = enemies[i];
+						// Check if the projectile is within the same tile as the enemy
+						if (
+							Math.floor(projectile.x) === enemy.x &&
+							Math.floor(projectile.y) === enemy.y
+						) {
+							enemyHit.volume = sfxVolume / 100;
+							enemyHit.play();
+
+							// Remove the enemy from the enemies array
+							enemies.splice(i, 1);
+
+							addExplosion(enemy.x, enemy.y);
+							// Add a pickup at the enemy's location with type "dropped"
+							pickups.push({ x: enemy.x, y: enemy.y, type: "dropped" });
+							// Optionally, remove the projectile upon hitting an enemy
+							projectile = null;
+							checkPlayerCollision();
+							break; // Exit the loop after hitting an enemy
+						}
+					}
+					checkPlayerCollision();
+				}
+			}
+
+			function shootProjectile() {
+				if (!projectile) {
+					const angle = player.flashlightAngle; // Use the current flashlight angle
+					projectile = {
+						x: player.x + 0.5, // Center of the tile
+						y: player.y + 0.5,
+						dx: Math.cos(angle) * 0.7, // Adjust speed as needed
+						dy: Math.sin(angle) * 0.7,
+						intensity: 2,
+						decay: 0.98, // How quickly it fades
+						trail: [],
+					};
+					// Play shoot sound
+					laserShoot.pause();
+					laserShoot.currentTime = 0;
+					laserShoot.volume = sfxVolume / 100;
+					laserShoot.play();
+				}
+			}
+
+			function blurRadianceGrid(grid, wallGrid, resolutionFactor, bounds) {
+				const cols = grid[0].length;
+				const rows = grid.length;
+
+				const minY = Math.max(bounds.minGY, 0);
+				const maxY = Math.min(bounds.maxGY, rows - 1);
+				const minX = Math.max(bounds.minGX, 0);
+				const maxX = Math.min(bounds.maxGX, cols - 1);
+
+				const blurredGrid = createRadianceGrid(resolutionFactor);
+				const kernelOne = [[1]];
+				const kernelThree = [
+					[1, 2, 1],
+					[2, 4, 2],
+					[1, 2, 1],
+				].map((row) => row.map((value) => value / 16));
+				const kernelFive = [
+					[1, 4, 7, 4, 1],
+					[4, 16, 26, 16, 4],
+					[7, 26, 41, 26, 7],
+					[4, 16, 26, 16, 4],
+					[1, 4, 7, 4, 1],
+				].map((row) => row.map((value) => value / 273));
+
+				let kernel;
+				let kernelSize;
+
+				if (blurringKernelSize === 1) {
+					kernel = kernelOne;
+					kernelSize = 1;
+				} else if (blurringKernelSize === 3) {
+					kernel = kernelThree;
+					kernelSize = 3;
+				} else if (blurringKernelSize === 5) {
+					kernel = kernelFive;
+					kernelSize = 5;
+				} else {
+					kernel = kernelThree;
+					kernelSize = 3;
+				}
+
+				const halfKernel = Math.floor(kernelSize / 2);
+
+				for (let y = minY; y <= maxY; y++) {
+					for (let x = minX; x <= maxX; x++) {
+						let sumIntensity = 0;
+						let sumColor = { r: 0, g: 0, b: 0 };
+						let weightSum = 0;
+
+						for (let ky = -halfKernel; ky <= halfKernel; ky++) {
+							for (let kx = -halfKernel; kx <= halfKernel; kx++) {
+								const nx = x + kx;
+								const ny = y + ky;
+								if (nx >= 0 && nx < cols && ny >= 0 && ny < rows) {
+									const weight = kernel[ky + halfKernel][kx + halfKernel];
+									const cell = grid[ny][nx];
+									sumIntensity += cell.intensity * weight;
+									sumColor.r += cell.color.r * cell.intensity * weight;
+									sumColor.g += cell.color.g * cell.intensity * weight;
+									sumColor.b += cell.color.b * cell.intensity * weight;
+									weightSum += weight;
+								}
+							}
+						}
+
+						blurredGrid[y][x].intensity = sumIntensity / weightSum;
+						if (blurredGrid[y][x].intensity > 0) {
+							blurredGrid[y][x].color.r = sumColor.r / (sumIntensity || 1);
+							blurredGrid[y][x].color.g = sumColor.g / (sumIntensity || 1);
+							blurredGrid[y][x].color.b = sumColor.b / (sumIntensity || 1);
+						}
+					}
+				}
+
+				return blurredGrid;
+			}
+
+			// Function to draw the projectile and its trail
+			function drawProjectile(projectile) {
+				const trailLength = 25; // Number of trail points
+				const trailDecay = 0.8; // How quickly the trail fades
+
+				// Initialize trail if it doesn't exist
+				if (!projectile.trail) {
+					projectile.trail = [];
+				}
+
+				// Add current position to trail
+				projectile.trail.push({ x: projectile.x, y: projectile.y, opacity: 1 });
+
+				// Limit trail length
+				if (projectile.trail.length > trailLength) {
+					projectile.trail.shift();
+				}
+
+				// Draw trail
+				for (let i = 0; i < projectile.trail.length; i++) {
+					const point = projectile.trail[i];
+					const opacity = point.opacity * (i / trailLength) * trailDecay;
+
+					ctx.fillStyle = `rgba(255, 0, 0, ${opacity})`; // Red color with fading opacity
+					ctx.beginPath();
+					ctx.arc(
+						(point.x - cameraX) * resolution,
+						(point.y - cameraY) * resolution,
+						resolution / 8, // Small radius
+						0,
+						Math.PI * 2
+					);
+					ctx.fill();
+				}
+
+				// Draw current projectile
+				ctx.fillStyle = `rgba(255, 0, 0, 1)`; // Bright red
+				ctx.beginPath();
+				ctx.arc(
+					(projectile.x - cameraX) * resolution,
+					(projectile.y - cameraY) * resolution,
+					resolution / 4, // Larger radius for brightness
+					0,
+					Math.PI * 2
+				);
+				ctx.fill();
+			}
+
+			// Game loop to update and render the game continuously
+			let gameLoopRunning = false;
+			function gameLoop() {
+				if (isPaused) {
+					gameLoopRunning = false;
+					return; // Exit the game loop
+				}
+				gameLoopRunning = true;
+				time += 1; // Increment time for pulsating effect
+
+				// Calculate camera position
+				const cols = wallGrid[0].length;
+				const rows = wallGrid.length;
+
+				const maxVisibleCols = Math.ceil(canvas.width / (resolution * scale));
+				const maxVisibleRows = Math.ceil(canvas.height / (resolution * scale));
+
+				// Center the camera on the player
+				cameraX = player.x - Math.floor(maxVisibleCols / 2);
+				cameraY = player.y - Math.floor(maxVisibleRows / 2);
+
+				// Clamp camera position to map boundaries
+				cameraX = Math.max(0, Math.min(cameraX, cols - maxVisibleCols));
+				cameraY = Math.max(0, Math.min(cameraY, rows - maxVisibleRows));
+
+				updateProjectile(); // Update projectile position and fade
+				propagateRadiance(); // Update lighting effects
+				if (projectile) {
+					moveEnemies();
+				}
+				draw(); // Redraw the scene
+
+				requestAnimationFrame(gameLoop); // Repeat the loop at the next animation frame
+			}
+
+			// Start the game loop
+			//gameLoop();
+
+			// Disable context menu on right-click for drawing light sources
+			canvas.addEventListener("contextmenu", (e) => e.preventDefault());
+		</script>
+	</body>
+</html>
